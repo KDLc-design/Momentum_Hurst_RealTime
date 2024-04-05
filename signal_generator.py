@@ -18,7 +18,7 @@ def fetch_candlestick_data(instrument_name, lookback_count):
     # Define the parameters for the candlestick data request
     params = {
         'count': lookback_count,
-        'granularity': 'H1',
+        'granularity': 'S5',
         'price': 'M',  # Midpoint candlestick prices
     }
 
