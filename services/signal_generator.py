@@ -4,7 +4,7 @@ from oandapyV20.exceptions import V20Error
 from oandapyV20.endpoints.instruments import InstrumentsCandles
 from hurst import compute_Hc
 
-from .config import OANDA_CLIENT_API
+from configs.oanda_conf import OANDA_CLIENT_API
 
 def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', price='M'):
     # Initialize the Oanda API client

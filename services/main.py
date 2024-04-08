@@ -1,9 +1,9 @@
-from signal_generator import generate_signal
-from risk_manager import get_quantity, place_market_order, get_open_positions, get_current_balance, \
+from services.signal_generator import generate_signal
+from services.risk_manager import get_quantity, place_market_order, get_open_positions, get_current_balance, \
     calculate_total_unrealised_pnl, close_all_trades
 from notification import send_email_notification
 import time
-from .config import OANDA_ACCESS_TOKEN, OANDA_ACCOUNT_ID, OANDA_CLIENT_API
+from configs.oanda_conf import OANDA_ACCESS_TOKEN, OANDA_ACCOUNT_ID, OANDA_CLIENT_API
 
 # helper variables
 instrument = 'EUR_USD'

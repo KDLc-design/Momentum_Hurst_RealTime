@@ -1,4 +1,4 @@
-from oandapyV20 import API, V20Error
+from oandapyV20 import API
 
 OANDA_ACCESS_TOKEN = "9c7349b9a9bd3d17409758cb7e29e53f-7fcbdfe7bc0636788aa51f7e4a95601f"
 OANDA_ACCOUNT_ID = "101-003-28600525-001"

@@ -6,7 +6,7 @@ from oandapyV20.endpoints.accounts import AccountDetails
 from oandapyV20.exceptions import V20Error
 # from notification import send_email_notification
 
-from .config import OANDA_ACCESS_TOKEN, OANDA_ACCOUNT_ID, OANDA_CLIENT_API
+from configs.oanda_conf import OANDA_ACCESS_TOKEN, OANDA_ACCOUNT_ID, OANDA_CLIENT_API
 
 
 def get_current_price(instrument):
