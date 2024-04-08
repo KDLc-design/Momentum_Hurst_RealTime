@@ -28,8 +28,9 @@ def landingPage() -> html.Div:
                     #     className="text-md font-semibold text-slate-400 px-3 py-1 cursor-default hover:bg-slate-800 transition duration-300 ease-in-out rounded-lg focus:ring focus:ring-slate-800 focus:ring-opacity-50 focus:bg-slate-800",
                     # ),
                     # floating right
-                    html.Div(
+                    html.A(
                         ["Version @FX"],
+                        href="https://github.com/KDLc-design/Momentum_Hurst_RealTime",
                         className="absolute right-2 text-md font-semibold text-slate-400 hover:text-slate-200 select-none px-3 py-1 cursor-default transition duration-300 ease-in-out",
                     )
                 ],
@@ -57,9 +58,9 @@ def landingPage() -> html.Div:
                                 className="select-none text-md font-semibold text-slate-50 px-3 py-1 z-50 mt-4 animate-pulse",
                             ),
                         ],
-                        className="h-1/2 w-full flex flex-col justify-start items-start p-4 mb-4 z-[999]",
+                        className="h-1/2 w-full flex flex-col justify-center items-start p-4 mb-4 z-[999]",
                     ),
-                    html.Div(className="z-[99] absolute w-1/2 h-full -ml-4 bg-slate-800 opacity-[95%] z-[99] rounded-r-full shadow-lg shadow-slate-950")
+                    html.Div(className="z-[99] absolute w-1/2 h-full -ml-4 bg-gradient-to-l from-slate-900/10 via-slate-900/70 to-slate-950")
                 ],
                 className="w-1/2 h-full flex flex-col justify-center items-start p-4 bg-slate-900 mb-4",
             ),

@@ -1,10 +1,10 @@
-# Dash Application Project
+# Momentum_Hurst_RealTime
 
 This project is a Dash application for real-time FX trading using Oanda API & customized strategy (Momentum, Hurst & RSI). It includes backtesting & real-time trading functionalities.
 
 ## Table of Contents
 
-- [Dash Application Project](#dash-application-project)
+- [Momentum\_Hurst\_RealTime](#momentum_hurst_realtime)
   - [Table of Contents](#table-of-contents)
   - [Project Structure](#project-structure)
   - [Getting Started](#getting-started)

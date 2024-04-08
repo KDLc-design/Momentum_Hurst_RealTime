@@ -134,7 +134,7 @@ def erase_title_dom_and_replace(
     Input("analysis-page-infinite-grid-full-trades-btn", "n_clicks"),
     prevent_initial_call=True,
 )
-def showResults(nClicks: int) -> dash_tvlwc.Tvlwc:
+def show_result_full_trades(nClicks: int) -> dash_tvlwc.Tvlwc:
     if nClicks is None:
         raise PreventUpdate
     return dmcTableComponent(
@@ -147,7 +147,7 @@ def showResults(nClicks: int) -> dash_tvlwc.Tvlwc:
     Input("analysis-page-infinite-grid-metrics-btn", "n_clicks"),
     prevent_initial_call=True,
 )
-def showResults(nClicks: int) -> dash_tvlwc.Tvlwc:
+def show_result_metrics(nClicks: int) -> dash_tvlwc.Tvlwc:
     if nClicks is None:
         raise PreventUpdate
     return dmcTableComponent("analysis-page-infinite-grid-metrics")  # tvwlcComponent()
@@ -157,7 +157,7 @@ def showResults(nClicks: int) -> dash_tvlwc.Tvlwc:
     Output("analysis-page-infinite-grid-full-trades-infinite-output", "children"),
     Input("analysis-page-infinite-grid-full-trades", "selectedRows"),
 )
-def display_selected_car2(selectedRows):
+def display_selected_full_trades(selectedRows):
     if selectedRows:
         return [f"You selected id {s['id']} and name {s['name']}" for s in selectedRows]
     raise PreventUpdate
@@ -167,7 +167,7 @@ def display_selected_car2(selectedRows):
     Output("analysis-page-infinite-grid-full-trades", "getRowsResponse"),
     Input("analysis-page-infinite-grid-full-trades", "getRowsRequest"),
 )
-def infinite_scroll(request):
+def infinite_scroll_full_trades(request):
     if request is None:
         raise PreventUpdate
     # instead of original ascending order, we use descending order
@@ -182,7 +182,7 @@ def infinite_scroll(request):
     Output("infinite-output-trade", "children"),
     Input("infinite-grid-trade", "selectedRows"),
 )
-def display_selected_car2(selectedRows):
+def display_selected_trade(selectedRows):
     if selectedRows:
         return [f"You selected id {s['id']} and name {s['name']}" for s in selectedRows]
     raise PreventUpdate
@@ -192,7 +192,7 @@ def display_selected_car2(selectedRows):
     Output("infinite-grid-trade", "getRowsResponse"),
     Input("infinite-grid-trade", "getRowsRequest"),
 )
-def infinite_scroll(request):
+def infinite_scroll_trade(request):
     if request is None:
         raise PreventUpdate
     partial = trades_df.iloc[request["startRow"] : request["endRow"]]
@@ -209,7 +209,7 @@ def infinite_scroll(request):
     Output("analysis-page-visualisation-container", "children"),
     Input("analysis-page-visualisation-btn", "n_clicks"),
 )
-def showVisualisation(nClicks: int) -> list[html.Div]:
+def show_visualisation_grid(nClicks: int) -> list[html.Div]:
     if nClicks is None:
         raise PreventUpdate
     return visualisationFiguresGrid()
@@ -303,6 +303,13 @@ def update_output(
 
 
 
+@app.callback(
+    Output("dashboard-page-drawer", "opened"),
+    Input("dashboard-page-drawer-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def drawer_demo(n_clicks):
+    return True
 
 
 
