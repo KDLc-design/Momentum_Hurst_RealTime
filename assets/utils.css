@@ -1,0 +1,394 @@
+/* Hide the debug menu */
+.dash-debug-menu__outer, .dash-debug-menu {
+    display: none !important;
+}
+/*markdown code*/
+.language-python {
+    background-color: rgb(71 85 105);
+    user-select: none;
+}
+/***
+bg-slate-50	background-color: rgb(248 250 252);
+bg-slate-100	background-color: rgb(241 245 249);
+bg-slate-200	background-color: rgb(226 232 240);
+bg-slate-300	background-color: rgb(203 213 225);
+bg-slate-400	background-color: rgb(148 163 184);
+bg-slate-500	background-color: rgb(100 116 139);
+bg-slate-600	background-color: rgb(71 85 105);
+bg-slate-700	background-color: rgb(51 65 85);
+bg-slate-800	background-color: rgb(30 41 59);
+bg-slate-900	background-color: rgb(15 23 42);
+bg-slate-950	background-color: rgb(2 6 23);
+
+**/
+.scrollableY {
+    overflow-y: auto;
+}
+.scrollableX {
+    overflow-x: auto;
+}
+/* Define the width and color of the scrollbar */
+*::-webkit-scrollbar{
+    height: 0.5rem;
+} 
+*::-webkit-scrollbar {
+    width: 0.5rem;
+}
+/* Define the background of the scrollbar track */
+*::-webkit-scrollbar-track {
+    background-color: transparent!important;
+    border: 2px solid transparent!important;
+    border-radius: 3px!important;
+}
+
+/* Define the color and hover state of the scrollbar thumb */
+*::-webkit-scrollbar-thumb {
+    background-color: rgb(148 163 184)!important;
+    border: 2px solid transparent;// rgb(148 163 184)!important;
+    border-radius: 3px!important;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(203 213 225)!important;
+}
+.echarts-container * {
+    width: 100%;
+    height: 100%;
+}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+.font-orbitron {
+    font-family: "Orbitron", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+.font-museo-moderno {
+    font-family: 'MuseoModerno', sans-serif;
+}
+.font-raleway {
+    font-family: 'Raleway', sans-serif;
+}
+/* table css */
+.ag-theme-alpine {
+    --ag-foreground-color: rgb(226 232 240)!important;
+    --ag-background-color: rgb(30 41 59)!important;
+    --ag-header-foreground-color: rgb(148 163 184)!important;
+    --ag-header-background-color: rgb(30 41 59)!important;
+    --ag-odd-row-background-color: rgb(30 41 59)!important;
+    --ag-header-column-resize-handle-color: rgb(100 116 139)!important;
+    --ag-row-hover-color: rgb(30 41 59)!important;
+    --ag-borders: none!important;
+    /* then add back a border between rows */
+    --ag-row-border-style: solid!important;
+    --ag-row-border-width: 1px!important;
+    --ag-row-border-color: rgb(71 85 105)!important;
+    --ag-range-selection-border-color: rgb(148 163 184)!important;
+    //--ag-font-size: 17px;
+    --ag-font-family: 'Urbanist'!important;
+}
+
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes slideInY {
+    0% { transform: translateY(100%); visibility: hidden; }
+    0.1% { visibility: visible; }
+    100% { transform: translateY(0); visibility: visible; transition: ease-in; }
+}
+@keyframes slideOutY {
+    0% { transform: translateY(0); visibility: visible; }
+    99.99% { visibility: hidden; }
+    100% { transform: translateY(100%); visibility: hidden; }
+}
+@keyframes slideInX {
+    0% { transform: translateX(100%); visibility: hidden; }
+    0.1% { visibility: visible; }
+    100% { transform: translateX(0); visibility: visible;}
+}
+@keyframes slideOutX {
+    0% { transform: translateX(0); visibility: visible; }
+    99.99% { visibility: hidden; }
+    100% { transform: translateX(-100%); visibility: hidden; }
+}
+@keyframes slideInAndOutX {
+    0% {
+        transform: translateX(100%);
+        visibility: hidden;
+    }
+    0.01% {
+        visibility: visible;
+    }
+    20%, 80% {
+        transform: translateX(0);
+        visibility: visible;
+    }
+    99.99% {
+        visibility: hidden;
+    }
+    100% {
+        transform: translateX(-100%);
+        visibility: hidden;
+    }
+}
+@keyframes slideInAndOutY {
+    0% {
+        transform: translateY(100%);
+        visibility: hidden;
+    }
+    0.01% {
+        visibility: visible;
+    }
+    20%, 80% {
+        transform: translateY(0);
+        visibility: visible;
+    }
+    99.99% {
+        visibility: hidden;
+    }
+    100% {
+        transform: translateY(-100%);
+        visibility: hidden;
+    }
+}
+/* Slide in from right hand side, bounce -y and out to top */
+@keyframes slideInXAndOutY {
+    0% {
+        transform: translateX(100%);
+        visibility: hidden;
+    }
+    0.01% {
+        visibility: visible;
+    }
+    30%, 60% {
+        transform: translateX(0);
+        transition: ease-out;
+    }
+    70% {
+        transform: translateY(5%);
+        /* ease in */
+        transition: ease-in;
+    }
+    99.99% {
+        visibility: hidden;
+    }
+    100% {
+        transform: translateY(-100%);
+        visibility: hidden;
+    }
+}
+@keyframes slideInXAndY {
+    0% {
+        transform: translate(-100%, 100%);
+        opacity: 0;
+    }
+    0.01% {
+        visibility: visible;
+    }
+    100% {
+        transform: translate(0, 0);
+        opacity: 1;
+        transition: ease-out;
+        visibility: visible;
+    }
+}
+.animate-slide-in-x-and-y {
+    animation-name: slideInXAndY;
+}
+.animate-slide-in-and-out-y {
+    animation-name: slideInAndOutY;
+}
+.animate-slide-in-x-and-out-y {
+    animation-name: slideInXAndOutY;
+}
+.animate-fade-in {
+    animation-name: fadeIn;
+}
+.animate-fade-out {
+    animation-name: fadeOut;
+}
+.animate-slide-in-y {
+    animation-name: slideInY;
+}
+.animate-slide-out-y {
+    animation-name: slideOutY;
+}
+.animate-slide-in-x {
+    animation-name: slideInX;
+}
+.animate-slide-out-x {
+    animation-name: slideOutX;
+}
+.animate-slide-in-and-out-x {
+    animation-name: slideInAndOutX;
+}
+
+.animate-fade-in, .animate-fade-out, .animate-slide-in-y, .animate-slide-out-y, .animate-slide-in-x, .animate-slide-out-x, .animate-slide-in-and-out-x, .animate-slide-in-x-and-out-y, .animate-slide-in-x-and-y, .animate-slide-in-and-out-y {
+    animation-fill-mode: forwards;
+}
+.animate-100 {
+    animation-duration: 100ms;
+}
+.animate-200 {
+    animation-duration: 200ms;
+}
+.animate-300 {
+    animation-duration: 300ms;
+}
+.animate-400 {
+    animation-duration: 400ms;
+}
+.animate-500 {
+    animation-duration: 500ms;
+}
+.animate-600 {
+    animation-duration: 600ms;
+}
+.animate-700 {
+    animation-duration: 700ms;
+}
+.animate-800 {
+    animation-duration: 800ms;
+}
+.animate-900 {
+    animation-duration: 900ms;
+}
+.animate-1000 {
+    animation-duration: 1000ms;
+}
+.animate-1500 {
+    animation-duration: 1500ms;
+}
+.animate-2000 {
+    animation-duration: 2000ms;
+}
+.animate-2500 {
+    animation-duration: 2500ms;
+}
+.animate-3000 {
+    animation-duration: 3000ms;
+}
+.animate-5000 {
+    animation-duration: 5000ms;
+}
+
+.animate-delay-100 {
+    animation-delay: 100ms;
+    visibility: hidden;
+}
+.animate-delay-200 {
+    animation-delay: 200ms;
+    visibility: hidden;
+}
+.animate-delay-300 {
+    animation-delay: 300ms;
+    visibility: hidden;
+}
+.animate-delay-400 {
+    animation-delay: 400ms;
+    visibility: hidden;
+}
+.animate-delay-500 {
+    animation-delay: 500ms;
+    visibility: hidden;
+}
+.animate-delay-600 {
+    animation-delay: 600ms;
+    visibility: hidden;
+}
+.animate-delay-700 {
+    animation-delay: 700ms;
+    visibility: hidden;
+}
+.animate-delay-800 {
+    animation-delay: 800ms;
+    visibility: hidden;
+}
+.animate-delay-900 {
+    animation-delay: 900ms;
+    visibility: hidden;
+}
+.animate-delay-1000 {
+    animation-delay: 1000ms;
+    visibility: hidden;
+}
+.animate-delay-1100 {
+    animation-delay: 1100ms;
+    visibility: hidden;
+}
+.animate-delay-1200 {
+    animation-delay: 1200ms;
+    visibility: hidden;
+}
+.animate-delay-1300 {
+    animation-delay: 1300ms;
+    visibility: hidden;
+}
+.animate-delay-1400 {
+    animation-delay: 1400ms;
+    visibility: hidden;
+}
+.animate-delay-1500 {
+    animation-delay: 1500ms;
+    visibility: hidden;
+}
+.animate-delay-1600 {
+    animation-delay: 1600ms;
+    visibility: hidden;
+}
+.animate-delay-1700 {
+    animation-delay: 1700ms;
+    visibility: hidden;
+}
+.animate-delay-1800 {
+    animation-delay: 1800ms;
+    visibility: hidden;
+}
+.animate-delay-1900 {
+    animation-delay: 1900ms;
+    visibility: hidden;
+}
+.animate-delay-2000 {
+    animation-delay: 2000ms;
+    visibility: hidden;
+}
+.animate-delay-2500 {
+    animation-delay: 2500ms;
+    visibility: hidden;
+}
+.animate-delay-3000 {
+    animation-delay: 3000ms;
+    visibility: hidden;
+}
+.animate-delay-5000 {
+    animation-delay: 5000ms;
+    visibility: hidden;
+}
+
+
+
+
+
+
+
+
+html {
+    overflow: hidden;
+    min-height: 400px;
+    font-family: 'Urbanist', sans-serif!important;
+}
+body {
+    overflow: hidden;
+    min-height: 400px;
+}
