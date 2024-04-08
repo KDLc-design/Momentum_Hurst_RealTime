@@ -1,6 +1,6 @@
 # Momentum_Hurst_RealTime
 
-This project is a Dash application for real-time FX trading using Oanda API & customized strategy (Momentum, Hurst & RSI). It includes backtesting & real-time trading functionalities.
+__Momentum_Hurst_RealTime__ is a Dash application for real-time FX trading using Oanda API & customized strategy (Momentum, Hurst & RSI). It includes backtesting & real-time trading functionalities.
 
 ## Table of Contents
 
@@ -16,12 +16,13 @@ Here's a high-level overview of the directory structure:
 
 ```plaintext
 .
-├── assets       # Contains static files like css and js files.
-├── components   # Components used in Dash app.
-    └── common     # Skeleton components used across components
-├── configs      # Configuration files and constants for app & Oanda.
-├── services     # Service modules for handling data retrieval & processing.
-└── app.py       # The main entry point of the Dash application.
+├── assets        # Contains static files like css and js files.
+├── components    # Components used in Dash app.
+|   └── common        # Skeleton components used across components
+├── configs       # Configuration files and constants for app & Oanda.
+├── pages         # Pages to be switched for different URLs.
+├── services      # Service modules for handling data retrieval & processing.
+└── app.py        # The main entry point of the Dash application.
 ```
 
 ## Getting Started

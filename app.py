@@ -18,11 +18,11 @@ from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
 from configs.server_conf import logger, app, full_trade_df, trades_df
-from components.landing_page_components import landingPage
-from components.dashboard_page_components import dashboardPage
-from components.analysis_page_components import analysisPage, scrollAreaComponent
-from components.common.tables import dmcTableComponent
-from components.common.figures import visualisationFiguresGrid
+from pages.landing_page import landingPage
+from pages.dashboard_page import dashboardPage
+from pages.analysis_page import analysisInitialPage, analysisDetailPage
+from components.tables import dmcTableComponent
+from components.figures import visualisationFiguresGrid
 
 app.clientside_callback(
     ClientsideFunction(
@@ -126,7 +126,7 @@ def erase_title_dom_and_replace(
     if nIntervals == 0 or nIntervals is None:
         raise PreventUpdate
     logger.info("Erase title and replace with analysis page layout.")
-    return scrollAreaComponent()
+    return analysisDetailPage()
 
 
 @app.callback(
@@ -262,7 +262,7 @@ def display_page(pathname: str):
         # deal with delay by client side js
         # ////time.sleep(0.2)  #! hack way to wait for the transition to finish
         logger.info("Switch to analysis page.")
-        return analysisPage()
+        return analysisInitialPage()
     logger.info(f"Switch to landing page for {pathname}.")
     return landingPage()
 

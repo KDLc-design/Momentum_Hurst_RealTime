@@ -1,6 +1,6 @@
 from dash import html, dcc
-from .common.wrappers import timelineNode
-def scrollAreaComponent():
+from components.common.wrappers import timelineNode
+def analysisDetailPage():
 
     return html.Div(
         [
@@ -485,7 +485,7 @@ def scrollAreaComponent():
         className="scroll-container w-dvw h-dvh flex flex-col justify-start items-start overflow-y-auto overflow-x-hidden scroll-smooth animate-slide-in-y animate-700 snap-y snap-mandatory box-content pr-[17px]",  #! to hide the scrollbar
     )
 
-def analysisPage():
+def analysisInitialPage():
     return html.Div(
         [
             html.Div(

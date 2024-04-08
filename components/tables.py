@@ -1,7 +1,9 @@
 from dash import html
 import dash_ag_grid as dag
 from configs.server_conf import logger, results_df, metrics_df, trades_df, full_trade_df
-
+import dash_core_components as dcc
+import dash_mantine_components as dmc
+from datetime import datetime as dt
 
 def dmcTableComponent(id):
     rowModelType = "infinite"
@@ -254,9 +256,8 @@ def benchmarkStatsTableComponent():
                                 )
 
 
-def backtestConfigTable():
-    return (
-        html.Div(
+def backtestConfigTableComponent():
+    return html.Div(
             [
                 html.Table(
                     [
@@ -381,8 +382,8 @@ def backtestConfigTable():
                 )
             ],
             className="w-full h-full justify-center items-center p-1 scrollableY",
-        ),
-    )
+        )
+
 
 
 def format_percentage_difference(column_name):

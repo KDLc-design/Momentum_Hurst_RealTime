@@ -14,7 +14,7 @@ from configs.server_conf import logger, results_df, metrics_df, trades_df, full_
 import dash_echarts as dec
 from services.strategy_utils import run_strategy, fetch_data
 from components.common.wrappers import paperWrapperComponent
-from components.common.tables import benchmarkStatsTableComponent, realtimePrimaryStatsTableComponent
+from components.tables import benchmarkStatsTableComponent, realtimePrimaryStatsTableComponent, backtestConfigTableComponent
 from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
@@ -24,6 +24,32 @@ from dash_iconify import DashIconify
 
 def drawer():
     return dmc.Drawer(
+        [
+            #! TODO add client overview (remaining balance, etc.)
+            #! TODO add terminal monitor
+            #! TODO add other params in main.py
+            # four rows for four divs, flex. each div contains a backtestConfigTableComponent
+            html.Div(
+                [
+                    backtestConfigTableComponent(),
+                ]
+            ),
+            html.Div(
+                [
+                    backtestConfigTableComponent(),
+                ]
+            ),
+            html.Div(
+                [
+                    backtestConfigTableComponent(),
+                ]
+            ),
+            html.Div(
+                [
+                    backtestConfigTableComponent(),
+                ]
+            ),
+        ],
         title="CONFIGURATION",
         id="dashboard-page-drawer",
         padding="md",
@@ -31,7 +57,7 @@ def drawer():
         zIndex=1000,
         overlayOpacity=0.2,
         position="top",
-        classNames={"drawer": "bg-slate-800 text-slate-300"},
+        classNames={"drawer": "bg-slate-800 text-slate-300", "body": "flex flex-row justify-between items-center"},
     )
 
 
