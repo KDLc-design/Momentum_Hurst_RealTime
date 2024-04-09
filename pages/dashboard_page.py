@@ -10,16 +10,16 @@ import dash_mantine_components as dmc
 import dash_tvlwc
 import yfinance as yf
 import random
-from configs.server_conf import logger, results_df, metrics_df, trades_df, full_trade_df
+from configs.server_conf import logger
 import dash_echarts as dec
 from services.strategy_utils import run_strategy, fetch_data
 from components.common.wrappers import paperWrapperComponent
-from components.tables import benchmarkStatsTableComponent, realtimePrimaryStatsTableComponent, backtestConfigTableComponent
+from components.tables import benchmarkStatsTableComponent, realtimePrimaryStatsTableComponent, backtestConfigTableComponent, oandaClientConfigTableComponent
 from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
 from dash_iconify import DashIconify
-
+from data.store import results_df, trades_df, full_trade_df
 
 
 def drawer():
@@ -31,7 +31,7 @@ def drawer():
             # four rows for four divs, flex. each div contains a backtestConfigTableComponent
             html.Div(
                 [
-                    backtestConfigTableComponent(),
+                    oandaClientConfigTableComponent(),
                 ]
             ),
             html.Div(
@@ -57,7 +57,7 @@ def drawer():
         zIndex=1000,
         overlayOpacity=0.2,
         position="top",
-        classNames={"drawer": "bg-slate-800 text-slate-300", "body": "flex flex-row justify-between items-center"},
+        classNames={"drawer": "bg-slate-800 text-slate-300", "body": "flex flex-row justify-between items-stretch"},
     )
 
 
@@ -261,19 +261,19 @@ def dashboardPage():
                                                         "Trading ",
                                                         html.Span(
                                                             "EUR/USD",
-                                                            className="text-slate-400 underline font-semibold",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                                                         ),
                                                         " with ",
                                                         html.Span(
                                                             "Oanda API",
-                                                            className="text-slate-400 underline font-semibold",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                                                         ),
                                                         "...",
                                                     ],
-                                                    className="text-slate-500 text-lg",
+                                                    className="text-slate-400 text-lg select-none",
                                                 ),
                                             ],
-                                            className="flex flex-col justify-start items-start w-full",
+                                            className="flex flex-col justify-start rounded-t-lg p-2 bg-slate-700 items-start w-full",
                                         ),
                                         realtimePrimaryStatsTableComponent(),
                                         html.Div(
@@ -300,10 +300,10 @@ def dashboardPage():
                                                     variant='white'
                                                 ),
                                             ],
-                                            className="flex flex-row justify-between items-center w-full",
+                                            className="flex flex-row justify-between items-center w-full p-2",
                                         ),
                                     ],
-                                    className="h-full w-full flex flex-col justify-between items-start p-2 gap-2",
+                                    className="h-full w-full flex flex-col justify-between items-start",
                                 ),
                             ],
                             className="relative w-full h-full",

@@ -1,6 +1,5 @@
 import logging
 from dash import Dash
-from services.strategy_utils import run_strategy
 # create a console and file logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,7 +20,6 @@ external_scripts = [
     # add the tailwind cdn url hosting the files with the utility classes
     {"src": "https://cdn.tailwindcss.com"}
 ]
-results_df, metrics_df, trades_df, full_trade_df = run_strategy()
 
 app = Dash(
     __name__, external_scripts=external_scripts, suppress_callback_exceptions=True, assets_folder="../assets"

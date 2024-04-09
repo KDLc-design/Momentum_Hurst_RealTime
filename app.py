@@ -17,13 +17,13 @@ from components.common.wrappers import paperWrapperComponent
 from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
-from configs.server_conf import logger, app, full_trade_df, trades_df
+from configs.server_conf import logger, app
 from pages.landing_page import landingPage
 from pages.dashboard_page import dashboardPage
 from pages.analysis_page import analysisInitialPage, analysisDetailPage
 from components.tables import dmcTableComponent
 from components.figures import visualisationFiguresGrid
-
+from data.store import trades_df, full_trade_df
 app.clientside_callback(
     ClientsideFunction(
         namespace="clientside", function_name="transitionToDashboardPage"

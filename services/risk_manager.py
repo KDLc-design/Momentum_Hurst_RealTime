@@ -6,15 +6,15 @@ from oandapyV20.endpoints.accounts import AccountDetails
 from oandapyV20.exceptions import V20Error
 # from notification import send_email_notification
 
-from configs.oanda_conf import OANDA_ACCESS_TOKEN, OANDA_ACCOUNT_ID, OANDA_CLIENT_API
+from configs.oanda_conf import CLIENT_CONFIG
 
 
 def get_current_price(instrument):
     params = {
         "instruments": instrument
     }
-    request = pricing.PricingInfo(accountID=OANDA_ACCOUNT_ID, params=params)
-    response = OANDA_CLIENT_API.request(request)
+    request = pricing.PricingInfo(accountID=CLIENT_CONFIG.account_id, params=params)
+    response = CLIENT_CONFIG.client_api.request(request)
 
     if 'prices' in response and response['prices']:
         return float(response['prices'][0]['bids'][0]['price'])
@@ -36,8 +36,8 @@ def get_instrument_precision(instrument):
 
 
 def get_current_balance():
-    request = AccountDetails(accountID=OANDA_ACCOUNT_ID)
-    response = OANDA_CLIENT_API.request(request)
+    request = AccountDetails(accountID=CLIENT_CONFIG.account_id)
+    response = CLIENT_CONFIG.client_api.request(request)
 
     if response and 'account' in response:
         account_info = response['account']
@@ -84,8 +84,8 @@ def get_quantity(instrument, trade_direction):
 
 
 def get_open_positions():
-    request = positions.OpenPositions(accountID=OANDA_ACCOUNT_ID)
-    response = OANDA_CLIENT_API.request(request)
+    request = positions.OpenPositions(accountID=CLIENT_CONFIG.account_id)
+    response = CLIENT_CONFIG.client_api.request(request)
     open_positions = response.get("positions", [])
     return open_positions
 
@@ -106,8 +106,8 @@ def calculate_total_unrealised_pnl(positions_dict):
     return long_pnl, short_pnl, total_pnl
 
 def get_current_balance():
-    request = AccountDetails(accountID=OANDA_ACCOUNT_ID)
-    response = OANDA_CLIENT_API.request(request)
+    request = AccountDetails(accountID=CLIENT_CONFIG.account_id)
+    response = CLIENT_CONFIG.client_api.request(request)
 
     if response and 'account' in response:
         account_info = response['account']
@@ -133,8 +133,8 @@ def place_market_order(instrument, units, take_profit_price, stop_loss_price):
     }
     
     try:
-        request = orders.OrderCreate(OANDA_ACCOUNT_ID, data=data)
-        response = OANDA_CLIENT_API.request(request)
+        request = orders.OrderCreate(CLIENT_CONFIG.account_id, data=data)
+        response = CLIENT_CONFIG.client_api.request(request)
         print("Oanda Orders placed successfully!")
         subject = "Oanda Trades Initiated"
         body = "Oanda Trades Initiated"

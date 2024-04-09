@@ -2,6 +2,7 @@ from dash import html, dcc
 import plotly.express as px
 import dash_echarts as dec
 import plotly.graph_objs as go
+from data.store import results_df
 # def gen_randlist(num):
 #     return random.sample(range(num), 7)
 

@@ -13,8 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from hurst import compute_Hc
 from .signal_generator import fetch_candlestick_data
-import logging
-logger = logging.getLogger(__name__)
+from configs.server_conf import logger
 pd.options.mode.chained_assignment = None  # default='warn'
 # init methond to construct and provide all thevariables that will be required by the strategy
 

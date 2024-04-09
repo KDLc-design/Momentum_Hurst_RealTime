@@ -4,7 +4,7 @@ from oandapyV20.exceptions import V20Error
 from oandapyV20.endpoints.instruments import InstrumentsCandles
 from hurst import compute_Hc
 
-from configs.oanda_conf import OANDA_CLIENT_API
+from configs.oanda_conf import CLIENT_CONFIG
 
 def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', price='M'):
     # Initialize the Oanda API client
@@ -21,7 +21,7 @@ def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', pr
     # ensure that the request is successful
     while True:
         try:
-            return OANDA_CLIENT_API.request(candles_request)
+            return CLIENT_CONFIG.client_api.request(candles_request)
         except V20Error as e:
             print(f"V20Error occurred: {e}")
         except Exception as e:
@@ -90,4 +90,4 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
         signal = "HOLD"
 
     return signal
-generate_signal("EUR_USD", 200, 5, 20, 100)
+#generate_signal("EUR_USD", 200, 5, 20, 100)

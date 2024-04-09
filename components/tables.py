@@ -1,10 +1,10 @@
-from dash import html
+from dash import html, dcc
 import dash_ag_grid as dag
-from configs.server_conf import logger, results_df, metrics_df, trades_df, full_trade_df
-import dash_core_components as dcc
+from configs.server_conf import logger
 import dash_mantine_components as dmc
 from datetime import datetime as dt
-
+from data.store import full_trade_df, trades_df, metrics_df, results_df
+from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 def dmcTableComponent(id):
     rowModelType = "infinite"
     dashGridOptions = {
@@ -56,24 +56,24 @@ def realtimePrimaryStatsTableComponent():
                             [
                                 html.Td(
                                     "Current Profit/Loss",
-                                    className="font-semibold select-none",
+                                    className="font-semibold select-none pl-2",
                                 ),
                                 html.Td(
                                     "$0.00",
-                                    className="text-emerald-600",
+                                    className="text-emerald-600 pr-2",
                                 ),
                             ],
-                            className="border-y border-slate-700",
+                            className="border-b border-slate-700",
                         ),
                         html.Tr(
                             [
                                 html.Td(
                                     "Pending Trades",
-                                    className="font-semibold select-none",
+                                    className="font-semibold select-none pl-2",
                                 ),
                                 html.Td(
                                     "10",
-                                    className="text-emerald-600",
+                                    className="text-emerald-600 pr-2",
                                 ),
                             ],
                             className="border-b border-slate-700",
@@ -82,11 +82,11 @@ def realtimePrimaryStatsTableComponent():
                             [
                                 html.Td(
                                     "Fulfilled Trades",
-                                    className="font-semibold select-none",
+                                    className="font-semibold select-none pl-2",
                                 ),
                                 html.Td(
                                     "100",
-                                    className="text-emerald-600",
+                                    className="text-emerald-600 pr-2",
                                 ),
                             ],
                             className="border-b border-slate-700",
@@ -384,6 +384,102 @@ def backtestConfigTableComponent():
             className="w-full h-full justify-center items-center p-1 scrollableY",
         )
 
+def oandaClientConfigTableComponent():
+    return html.Div(
+            [
+                html.Table(
+                    [
+                        html.Tbody(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "API Provider",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            "Oanda",
+                                            className="text-slate-400 pr-2",
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Access Token",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(
+                                                id="oanda-access-token-input",
+                                                type="text",
+                                                value=CLIENT_CONFIG.access_token,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Accound ID",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(
+                                                id="oanda-account-id-input",
+                                                type="text",
+                                                value=CLIENT_CONFIG.account_id,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Environment",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(
+                                                id="oanda-account-environment-input",
+                                                type="text",
+                                                value=CLIENT_CONFIG.environment,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Connect API",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            html.Button(
+                                                "Connected",
+                                                id="connect-oanda-api-btn",
+                                                className="text-md font-semibold text-slate-50 bg-emerald-500 px-3 py-1 rounded-lg hover:bg-emerald-600 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                            ],
+                            className="w-full h-full text-slate-400",
+                        ),
+                    ],
+                    className="w-full h-full",
+                )
+            ],
+            className="w-full h-full justify-center items-center p-1 scrollableY",
+        )
 
 
 def format_percentage_difference(column_name):
