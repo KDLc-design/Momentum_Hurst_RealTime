@@ -86,8 +86,8 @@ class Momentum_Hurst_RSI():
         self.visualise_data = data
     
     def visualise_strategy(self):
-        logger.info('-------------------')
-        logger.info('Visualising the Strategy crossover period')
+        #logger.info('-------------------')
+        #logger.info('Visualising the Strategy crossover period')
         bt_data = self.visualise_data
         plt.figure(figsize=(15, 5))
         plt.plot(bt_data["Close_Price"] ,color='black', label='Price', linestyle='dashed')
@@ -118,9 +118,9 @@ class Momentum_Hurst_RSI():
 
     def performance(self):
 
-        logger.info('-------------------')
-        logger.info('Performance of the Strategy')
-        logger.info('-------------------')
+        #logger.info('-------------------')
+        #logger.info('Performance of the Strategy')
+        #logger.info('-------------------')
 
         bt_data = self.visualise_data
 
@@ -128,18 +128,18 @@ class Momentum_Hurst_RSI():
         annual_ret = daily_ret * 252
         annual_regular_ret = np.exp(annual_ret) - 1
 
-        logger.info('Annual Regular Return:', annual_regular_ret)
+        #logger.info('Annual Regular Return:', annual_regular_ret)
 
         daily_std = bt_data[['Stock_Returns', 'Strategy_Returns']].std()
         annual_std = daily_std * math.sqrt(252)
         daily_regular_std = (np.exp(bt_data[['Stock_Returns', 'Strategy_Returns']]) - 1).std()
         annual_regular_std = daily_regular_std * math.sqrt(252)
 
-        logger.info('Annual Regular Standard Deviation:', annual_regular_std)
+        #logger.info('Annual Regular Standard Deviation:', annual_regular_std)
 
         sr = annual_regular_ret / annual_regular_std
 
-        logger.info('Sharpe Ratio:', sr)
+        #logger.info('Sharpe Ratio:', sr)
 
     def returns_plot(self):
         bt_data = self.visualise_data
@@ -157,12 +157,12 @@ class Momentum_Hurst_RSI():
 
         drawdown = bt_data['Cum_Max'] - bt_data['Gross_Cum_Returns']
 
-        logger.info('The Maximum Drawdown is:', drawdown.max())
-        logger.info('-'*20)
+        #logger.info('The Maximum Drawdown is:', drawdown.max())
+        #logger.info('-'*20)
 
         zero_periods = drawdown[drawdown == 0]
         delta_values = zero_periods.index[1:] - zero_periods.index[:-1]
-        logger.info('The Longest Drawdown period is:', delta_values.max())
+        #logger.info('The Longest Drawdown period is:', delta_values.max())
 # Function to calculate annual return, annual standard deviation and Sharpe ratio for multiple stocks
 def calculate_metrics(data, prefix):
     daily_ret = data.mean(axis=0)
@@ -175,11 +175,11 @@ def calculate_metrics(data, prefix):
     annual_regular_std = daily_regular_std * math.sqrt(252)
 
     sr = annual_regular_ret / annual_regular_std
-    logger.info(f"Annual Return ({prefix}):", annual_ret, annual_regular_ret)
-    logger.info(f'Annual Std ({prefix}):', annual_std, annual_regular_std)
-    logger.info(f'Annual Regular Return ({prefix}):', annual_regular_ret)
-    logger.info(f'Annual Regular Standard Deviation ({prefix}):', annual_regular_std)
-    logger.info(f'Sharpe Ratio ({prefix}):', sr)
+    #logger.info(f"Annual Return ({prefix}):", annual_ret, annual_regular_ret)
+    #logger.info(f'Annual Std ({prefix}):', annual_std, annual_regular_std)
+    #logger.info(f'Annual Regular Return ({prefix}):', annual_regular_ret)
+    #logger.info(f'Annual Regular Standard Deviation ({prefix}):', annual_regular_std)
+    #logger.info(f'Sharpe Ratio ({prefix}):', sr)
     return pd.DataFrame({'Name':prefix,'Annual Return': annual_regular_ret, 'Annual Std': annual_regular_std, 'Sharpe Ratio': sr}, index=[prefix])
 
 
@@ -189,9 +189,9 @@ def run_strategy_and_analyze(stocks, start_date, end_date, short_window, long_wi
     metrics = pd.DataFrame()
     trades = pd.DataFrame()
     for stock in stocks:
-        logger.info('-------------------')
-        logger.info('Running the Strategy for:', stock)
-        logger.info('-------------------')
+        #logger.info('-------------------')
+        #logger.info('Running the Strategy for:', stock)
+        #logger.info('-------------------')
         momentum_hurst_rsi = Momentum_Hurst_RSI(stock, start_date, end_date, short_window, long_window, hurst_window)
         momentum_hurst_rsi.stratrgy()
         #momentum_hurst_rsi.data.to_csv(stock + '_data.csv')
@@ -229,10 +229,10 @@ def run_strategy_and_analyze(stocks, start_date, end_date, short_window, long_wi
     
     drawdown = results['cum_max'] - results['cumulative_portfolio_strategy']
 
-    logger.info('The Maximum Drawdown is:', drawdown.max())
+    #logger.info('The Maximum Drawdown is:', drawdown.max())
     zero_periods = drawdown[drawdown == 0]
     delta_values = zero_periods.index[1:] - zero_periods.index[:-1]
-    logger.info('The Longest Drawdown period is:', delta_values.max())
+    #logger.info('The Longest Drawdown period is:', delta_values.max())
     # to csv, if exists, rewrite
     results.to_csv('results.csv',)
     metrics.to_csv('metrics.csv')

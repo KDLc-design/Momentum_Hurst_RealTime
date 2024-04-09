@@ -1,6 +1,7 @@
 # Function to send an email notification
 import smtplib
 from email.mime.text import MIMEText
+from configs.server_conf import logger
 
 def send_email_notification(subject, body):
     sender_email = "xyz@gmail.com"  # Replace with your email address
@@ -21,4 +22,4 @@ def send_email_notification(subject, body):
             server.login(smtp_username, smtp_password)  # Login to the SMTP server (if required)
             server.sendmail(sender_email, receiver_email, msg.as_string())
     except Exception as e:
-        print(f"Failed to send email notification. Error: {e}")
+        logger.info(f"Failed to send email notification. Error: {e}")

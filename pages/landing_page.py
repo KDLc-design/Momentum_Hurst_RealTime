@@ -10,9 +10,7 @@ def landingPage() -> html.Div:
     """
     bufferSymbol = "EUR_USD"
     candlestickData = fetch_data(bufferSymbol, 200)
-    logger.info(
-        f"Landing page layout. yfinance data downloaded for {bufferSymbol}. len: {len(candlestickData)}"
-    )
+    #logger.info(f"Landing page layout. yfinance data downloaded for {bufferSymbol}. len: {len(candlestickData)}")
     return html.Div(
         [
             # dcc.Store(
@@ -34,7 +32,7 @@ def landingPage() -> html.Div:
                         className="absolute right-2 text-md font-semibold text-slate-400 hover:text-slate-200 select-none px-3 py-1 cursor-default transition duration-300 ease-in-out",
                     )
                 ],
-                className="fixed top-0 w-dvw h-16 bg-slate-900 flex flex-row gap-1 justify-center items-center p-1 z-50",
+                className="fixed top-0 w-dvw h-16 bg-transparent flex flex-row gap-1 justify-center items-center p-1 z-50",
             ),
             html.Div(
                 [

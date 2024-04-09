@@ -7,6 +7,7 @@ from oandapyV20.exceptions import V20Error
 # from notification import send_email_notification
 
 from configs.oanda_conf import CLIENT_CONFIG
+from configs.server_conf import logger
 
 
 def get_current_price(instrument):
@@ -59,9 +60,9 @@ def get_quantity(instrument, trade_direction):
         take_profit_price = round(current_price * (1 - take_profit_percentage), get_instrument_precision(instrument))
         stop_loss_price = round(current_price * (1 + stop_loss_percentage), get_instrument_precision(instrument))
     else:
-        print("Invalid trade direction")
+        logger.info("Invalid trade direction")
         return
-    # print(stop_loss_price, take_profit_price)
+    # logger.info(stop_loss_price, take_profit_price)
 
     trade_currency_2 = instrument[4:]
     position_size = None
@@ -72,7 +73,7 @@ def get_quantity(instrument, trade_direction):
     elif "JPY" in trade_currency_2:
         position_size = 50000
     else:
-        print("Unsupported currency in the denominator")
+        logger.info("Unsupported currency in the denominator")
         position_size = None
     
     if trade_direction == "BUY":
@@ -135,13 +136,13 @@ def place_market_order(instrument, units, take_profit_price, stop_loss_price):
     try:
         request = orders.OrderCreate(CLIENT_CONFIG.account_id, data=data)
         response = CLIENT_CONFIG.client_api.request(request)
-        print("Oanda Orders placed successfully!")
+        logger.info("Oanda Orders placed successfully!")
         subject = "Oanda Trades Initiated"
         body = "Oanda Trades Initiated"
         # send_email_notification(subject, body)
     except V20Error as e:
-        print("Error placing Oanda orders:")
-        print(e)
+        logger.info("Error placing Oanda orders:")
+        logger.info(e)
         subject = "Failed to Take Oanda Trades"
         body = "Failed to Take Oanda Trades"
         # send_email_notification(subject, body)
@@ -162,8 +163,8 @@ def close_all_trades(client, account_id):
                 }
                 order_request = trades.TradeClose(accountID=account_id, tradeID=trade_id, data=data)
                 response = client.request(order_request)
-                print(f"Trade {trade_id} closed successfully.")
+                logger.info(f"Trade {trade_id} closed successfully.")
             except V20Error as e:
-                print(f"Failed to close trade {trade_id}. Error: {e}")
+                logger.info(f"Failed to close trade {trade_id}. Error: {e}")
     else:
-        print("No open trades to close.")
+        logger.info("No open trades to close.")

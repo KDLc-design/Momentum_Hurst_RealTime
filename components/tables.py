@@ -5,6 +5,7 @@ import dash_mantine_components as dmc
 from datetime import datetime as dt
 from data.store import full_trade_df, trades_df, metrics_df, results_df
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
+from services.risk_manager import get_current_balance
 def dmcTableComponent(id):
     rowModelType = "infinite"
     dashGridOptions = {
@@ -25,7 +26,7 @@ def dmcTableComponent(id):
     elif id == "analysis-page-infinite-grid-results":
         columnDefs = [{"field": col} for col in results_df.columns]
     else:
-        logger.error("Invalid id for dmcTableComponent", id)
+        #logger.error("Invalid id for dmcTableComponent", id)
         raise ValueError("Invalid id for dmcTableComponent")
     AgGridConfig = {
         "id": id,
@@ -458,6 +459,18 @@ def oandaClientConfigTableComponent():
                                 html.Tr(
                                     [
                                         html.Td(
+                                            "Balance",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            html.Div(get_current_balance(), id="oanda-account-balance", className="text-emerald-500 pr-2"),
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
                                             "Connect API",
                                             className="font-semibold select-none",
                                         ),
@@ -481,7 +494,22 @@ def oandaClientConfigTableComponent():
             className="w-full h-full justify-center items-center p-1 scrollableY",
         )
 
+def readlog():
+    # read last 100 lines of the log file & return as html.P for each line
+    with open("app.log", "r") as f:
+        lines = f.readlines()[-100:]
+        #sort the lines in reverse order
+        lines.reverse()
+    return html.Div([html.P(line) for line in lines], className="w-full h-full scrollableY")
+def backendTerminalMonitorTableComponent():
 
+    return html.Div(
+        [
+            html.P("Backend Terminal Monitor", className="font-semibold text-slate-400 text-lg"),
+            html.Div(readlog(), id="dashboard-page-log",className="flex-1 bg-slate-900 h-full font-consolas p-2 rounded-lg"),
+        ],
+        className="w-full h-full justify-center items-center p-1",
+    )
 def format_percentage_difference(column_name):
     # Ensure that the DataFrame contains the column and the necessary index labels
     if (

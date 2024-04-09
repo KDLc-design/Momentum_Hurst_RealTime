@@ -14,7 +14,7 @@ from configs.server_conf import logger
 import dash_echarts as dec
 from services.strategy_utils import run_strategy, fetch_data
 from components.common.wrappers import paperWrapperComponent
-from components.tables import benchmarkStatsTableComponent, realtimePrimaryStatsTableComponent, backtestConfigTableComponent, oandaClientConfigTableComponent
+from components.tables import *
 from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
@@ -32,22 +32,26 @@ def drawer():
             html.Div(
                 [
                     oandaClientConfigTableComponent(),
-                ]
+                ],
+                className="flex-1",
             ),
             html.Div(
                 [
                     backtestConfigTableComponent(),
-                ]
+                ],
+                className="flex-1",
+            ),
+            html.Div(
+                [
+                    backendTerminalMonitorTableComponent(),
+                ],
+                className="flex-1",
             ),
             html.Div(
                 [
                     backtestConfigTableComponent(),
-                ]
-            ),
-            html.Div(
-                [
-                    backtestConfigTableComponent(),
-                ]
+                ],
+                className="flex-1",
             ),
         ],
         title="CONFIGURATION",
@@ -57,7 +61,7 @@ def drawer():
         zIndex=1000,
         overlayOpacity=0.2,
         position="top",
-        classNames={"drawer": "bg-slate-800 text-slate-300", "body": "flex flex-row justify-between items-stretch"},
+        classNames={"drawer": "bg-slate-800 text-slate-300 overflow-hidden flex flex-col", "body": "flex flex-row flex-1 overflow-hidden justify-between items-stretch", "header":"mb-0"},
     )
 
 
@@ -235,9 +239,9 @@ def dashboardPage():
         longTermMomentumRecords.append({"time": date, "value": row["LongTermMomentum"]})
         HurstRecords.append({"time": date, "value": row["Hurst"]})
         # RSIRecords.append({'time':date, 'value':row['RSI']})
-    logger.info(ticker_records[:3])
-    logger.info(shortTermMomentumRecords[:3])
-    logger.info(markers[:3])
+    #logger.info(ticker_records[:3])
+    #logger.info(shortTermMomentumRecords[:3])
+    #logger.info(markers[:3])
     return html.Div(
         [
             drawer(),
@@ -258,7 +262,7 @@ def dashboardPage():
                                             [
                                                 html.P(
                                                     [
-                                                        "Trading ",
+                                                        "Ready to trade ",
                                                         html.Span(
                                                             "EUR/USD",
                                                             className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
@@ -267,34 +271,39 @@ def dashboardPage():
                                                         html.Span(
                                                             "Oanda API",
                                                             className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
-                                                        ),
-                                                        "...",
+                                                        )
                                                     ],
                                                     className="text-slate-400 text-lg select-none",
                                                 ),
                                             ],
+                                            id="dashboard-page-trade-title",
                                             className="flex flex-col justify-start rounded-t-lg p-2 bg-slate-700 items-start w-full",
                                         ),
                                         realtimePrimaryStatsTableComponent(),
                                         html.Div(
                                             [
+                                                dcc.Interval(
+                                                    id="dashboard-page-trade-interval",
+                                                    interval=5 * 1000,
+                                                    n_intervals=0,
+                                                    ),
                                                 dmc.Button(
-                                                    "MANUAL",
-                                                    id="dashboard-page-manual-trade-button",
-                                                    leftIcon=DashIconify(icon="mdi:hand-back-left", width=20),
+                                                    "START",
+                                                    id="dashboard-page-start-trade-btn",
+                                                    leftIcon=DashIconify(icon="mdi:play", width=20),
                                                     className="self-center font-semibold text-emerald-600 w-full p-2 text-center bg-transparent",
                                                     variant='white'
                                                 ),
                                                 dmc.Button(
                                                     "PAUSE",
-                                                    id="dashboard-page-pause-trade-button",
+                                                    id="dashboard-page-pause-trade-btn",
                                                     leftIcon=DashIconify(icon="mdi:pause", width=20),
                                                     className="self-center font-semibold text-yellow-600 w-full p-2 text-center bg-transparent",
                                                     variant='white'
                                                 ),
                                                 dmc.Button(
                                                     "KILL",
-                                                    id="dashboard-page-kill-trade-button",
+                                                    id="dashboard-page-kill-trade-btn",
                                                     leftIcon=DashIconify(icon="mdi:book-cancel", width=20),
                                                     className="self-center font-semibold text-rose-600 w-full p-2 text-center bg-transparent",
                                                     variant='white'

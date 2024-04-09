@@ -18,12 +18,14 @@ from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
 from configs.server_conf import logger, app
+from configs.oanda_conf import CLIENT_CONFIG
 from pages.landing_page import landingPage
 from pages.dashboard_page import dashboardPage
 from pages.analysis_page import analysisInitialPage, analysisDetailPage
 from components.tables import dmcTableComponent
 from components.figures import visualisationFiguresGrid
 from data.store import trades_df, full_trade_df
+from services.main import run_trading_cycle, close_all_trades
 app.clientside_callback(
     ClientsideFunction(
         namespace="clientside", function_name="transitionToDashboardPage"
@@ -125,7 +127,7 @@ def erase_title_dom_and_replace(
     """
     if nIntervals == 0 or nIntervals is None:
         raise PreventUpdate
-    logger.info("Erase title and replace with analysis page layout.")
+    #logger.info("Erase title and replace with analysis page layout.")
     return analysisDetailPage()
 
 
@@ -256,14 +258,14 @@ def trigger_dashboardPage_transition(n_clicks: int, pathname: str, classname: st
 )
 def display_page(pathname: str):
     if pathname == "/dashboard":
-        logger.info("Switch to dashboard page.")
+        #logger.info("Switch to dashboard page.")
         return dashboardPage()
     if pathname == "/analysis":
         # deal with delay by client side js
         # ////time.sleep(0.2)  #! hack way to wait for the transition to finish
-        logger.info("Switch to analysis page.")
+        #logger.info("Switch to analysis page.")
         return analysisInitialPage()
-    logger.info(f"Switch to landing page for {pathname}.")
+    #logger.info(f"Switch to landing page for {pathname}.")
     return landingPage()
 
 # Define the callback to handle form submission
@@ -311,10 +313,126 @@ def update_output(
 def drawer_demo(n_clicks):
     return True
 
-
-
-
-
+is_trading_flag = False
+@app.callback(
+    Output("dashboard-page-log", "children"),
+    Output("dashboard-page-trade-title", "children"),
+    Input("dashboard-page-start-trade-btn", "n_clicks"),
+    Input("dashboard-page-pause-trade-btn", "n_clicks"),
+    Input("dashboard-page-kill-trade-btn", "n_clicks"),
+    Input("dashboard-page-trade-interval", "n_intervals"),
+    prevent_initial_call=True,
+)
+def real_time_trade(*args):
+        
+    def readlog():
+        # read last 100 lines of the log file & return as html.P for each line
+        with open("app.log", "r") as f:
+            lines = f.readlines()[-100:]
+            #sort the lines in reverse order
+            lines.reverse()
+        return html.Div([html.P(line) for line in lines], className="w-full h-full scrollableY")
+    global is_trading_flag
+    if not args:
+        raise PreventUpdate
+    clicked_btn = ctx.triggered[0]["prop_id"].split(".")[0]
+    if is_trading_flag and clicked_btn == "dashboard-page-start-trade-btn":
+        return readlog(), html.P(
+                                                    [
+                                                        "Trading ",
+                                                        html.Span(
+                                                            "EUR/USD",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                                                        ),
+                                                        " with ",
+                                                        html.Span(
+                                                            "Oanda API",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                                                        ),
+                                                        "...",
+                                                    ],
+                                                    className="text-slate-400 text-lg select-none",
+                                                )
+    # if (clicked start button and not trading) or already trading
+    if clicked_btn == "dashboard-page-start-trade-btn":
+        if not is_trading_flag:
+            logger.info("Starting trading...")
+            ret_dict = run_trading_cycle()
+            is_trading_flag = True
+        return readlog(), html.P(
+                                                    [
+                                                        "Trading ",
+                                                        html.Span(
+                                                            "EUR/USD",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                                                        ),
+                                                        " with ",
+                                                        html.Span(
+                                                            "Oanda API",
+                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                                                        ),
+                                                        "...",
+                                                    ],
+                                                    className="text-slate-400 text-lg select-none",
+                                                )
+    elif clicked_btn == "dashboard-page-pause-trade-btn" and is_trading_flag:
+        logger.info("Pausing trading...")
+        is_trading_flag = False
+        return readlog(), html.P(
+            [
+                "Ready to trade ",
+                html.Span(
+                    "EUR/USD",
+                    className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                ),
+                " with ",
+                html.Span(
+                    "Oanda API",
+                    className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                )
+            ],
+            className="text-slate-400 text-lg select-none",
+        )
+    elif clicked_btn == "dashboard-page-kill-trade-btn":
+        logger.info("Closing all trades...")
+        # close all trades and stop trading
+        close_all_trades(CLIENT_CONFIG.client_api, CLIENT_CONFIG.account_id)
+        is_trading_flag = False
+        return readlog(), html.P(
+                    [
+                        "Ready to trade ",
+                        html.Span(
+                            "EUR/USD",
+                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                        ),
+                        " with ",
+                        html.Span(
+                            "Oanda API",
+                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                        )
+                    ],
+                    className="text-slate-400 text-lg select-none",
+                )
+    elif is_trading_flag:
+        run_trading_cycle()
+        return readlog(), html.P(
+            [
+                "Trading ",
+                html.Span(
+                    "EUR/USD",
+                    className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                ),
+                " with ",
+                html.Span(
+                    "Oanda API",
+                    className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
+                ),
+                "..."
+            ],
+            className="text-slate-400 text-lg select-none",
+        )
+    else:
+        raise PreventUpdate
 
 app.layout = html.Div(
     [

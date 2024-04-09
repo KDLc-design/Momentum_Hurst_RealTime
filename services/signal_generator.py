@@ -5,6 +5,7 @@ from oandapyV20.endpoints.instruments import InstrumentsCandles
 from hurst import compute_Hc
 
 from configs.oanda_conf import CLIENT_CONFIG
+from configs.server_conf import logger
 
 def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', price='M'):
     # Initialize the Oanda API client
@@ -23,9 +24,9 @@ def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', pr
         try:
             return CLIENT_CONFIG.client_api.request(candles_request)
         except V20Error as e:
-            print(f"V20Error occurred: {e}")
+            logger.info(f"V20Error occurred: {e}")
         except Exception as e:
-            print(f"Exception occurred: {e}")
+            logger.info(f"Exception occurred: {e}")
 
 def calculate_hurst_exponent(close_prices, hurst_period):
     # Calculate the Hurst exponent
@@ -59,19 +60,19 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
     close_prices = [float(candle['mid']['c']) for candle in response['candles']]
     # Calculate Hurst exponent
     hurst = calculate_hurst_exponent(close_prices, hurst_period)
-    print("Hurst Exponent:", hurst)
+    logger.info(f"Hurst Exponent: {hurst:.6f}")
 
     # Calculate short-term Momentum
     short_term_momentum = calculate_momentum(close_prices, st_period)
-    print("Short-term Momentum:", short_term_momentum)
+    logger.info(f"Short-term Momentum:{short_term_momentum:.6f}")
 
     # Calculate long-term Momentum
     long_term_momentum = calculate_momentum(close_prices, lt_period)
-    print("Long-term Momentum:", long_term_momentum)
+    logger.info(f"Long-term Momentum: {long_term_momentum:.6f}")
 
     # Calculate RSI
     rsi = calculate_rsi(close_prices, st_period)
-    print("RSI:", rsi)
+    logger.info(f"RSI: {rsi:.6f}")
 
     # Check for crossover
     if hurst > 0.8 and short_term_momentum > 0 and long_term_momentum > 0:

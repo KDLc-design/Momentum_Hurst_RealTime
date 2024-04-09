@@ -68,6 +68,9 @@ bg-slate-950	background-color: rgb(2 6 23);
     font-weight: 400;
     font-style: normal;
 }
+.font-consolas {
+    font-family: 'Consolas', sans-serif;
+}
 .font-museo-moderno {
     font-family: 'MuseoModerno', sans-serif;
 }
