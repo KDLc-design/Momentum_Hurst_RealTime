@@ -18,7 +18,7 @@ from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
 from configs.server_conf import logger, app
-from configs.oanda_conf import CLIENT_CONFIG
+from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from pages.landing_page import landingPage
 from pages.dashboard_page import dashboardPage
 from pages.analysis_page import analysisInitialPage, analysisDetailPage
@@ -26,6 +26,7 @@ from components.tables import dmcTableComponent
 from components.figures import visualisationFiguresGrid
 from data.store import trades_df, full_trade_df
 from services.main import run_trading_cycle, close_all_trades
+from services.risk_manager import fetch_trade_markers
 app.clientside_callback(
     ClientsideFunction(
         namespace="clientside", function_name="transitionToDashboardPage"
@@ -81,9 +82,10 @@ def update_landing_page_candlestick(
     Returns:
         list[list[dict]]: updated series data.
     """
-    return [fetch_data('EUR_USD', 200)]
+    return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
 
 @app.callback(
+    Output("dashboard-page-candlestick-chart", "seriesMarkers"),
     Output("dashboard-page-candlestick-chart", "seriesData"),
     # Output("landing-page-candlestick-chart-store", "data"),
     # Input("landing-page-candlestick-chart", "seriesData"),
@@ -108,7 +110,11 @@ def update_dashboard_page_candlestick(
     Returns:
         list[list[dict]]: updated series data.
     """
-    return [fetch_data('EUR_USD', 500)]
+    # data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
+    # logger.info(f"Fetching {TRADE_CONFIG.lookback_count} data for {TRADE_CONFIG.instrument}, data size {len(data)}")
+    # markers = fetch_trade_markers()
+    # logger.info(markers)
+    return [fetch_trade_markers()],[fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
 
 @app.callback(
     Output("analysis-page-inner-container", "children"),
@@ -312,10 +318,19 @@ def update_output(
 )
 def drawer_demo(n_clicks):
     return True
-
-is_trading_flag = False
 @app.callback(
     Output("dashboard-page-log", "children"),
+    Input("dashboard-page-trade-interval", "n_intervals"),
+)
+def update_log(n_intervals):
+    with open("app.log", "r") as f:
+        lines = f.readlines()[-100:]
+        lines.reverse()
+    return html.Div([html.P(line) for line in lines], className="w-full h-full scrollableY")
+is_trading_flag = False
+@app.callback(
+    Output("primary-stats-table-current-balance", "children"),
+    Output("primary-stats-table-current-pnl", "children"),
     Output("dashboard-page-trade-title", "children"),
     Input("dashboard-page-start-trade-btn", "n_clicks"),
     Input("dashboard-page-pause-trade-btn", "n_clicks"),
@@ -324,24 +339,16 @@ is_trading_flag = False
     prevent_initial_call=True,
 )
 def real_time_trade(*args):
-        
-    def readlog():
-        # read last 100 lines of the log file & return as html.P for each line
-        with open("app.log", "r") as f:
-            lines = f.readlines()[-100:]
-            #sort the lines in reverse order
-            lines.reverse()
-        return html.Div([html.P(line) for line in lines], className="w-full h-full scrollableY")
     global is_trading_flag
     if not args:
         raise PreventUpdate
     clicked_btn = ctx.triggered[0]["prop_id"].split(".")[0]
     if is_trading_flag and clicked_btn == "dashboard-page-start-trade-btn":
-        return readlog(), html.P(
+        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
                                                     [
                                                         "Trading ",
                                                         html.Span(
-                                                            "EUR/USD",
+                                                            TRADE_CONFIG.instrument,
                                                             className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                                                         ),
                                                         " with ",
@@ -351,19 +358,18 @@ def real_time_trade(*args):
                                                         ),
                                                         "...",
                                                     ],
-                                                    className="text-slate-400 text-lg select-none",
+                                                    className="animate-pulse text-slate-400 text-lg select-none",
                                                 )
     # if (clicked start button and not trading) or already trading
     if clicked_btn == "dashboard-page-start-trade-btn":
-        if not is_trading_flag:
-            logger.info("Starting trading...")
-            ret_dict = run_trading_cycle()
-            is_trading_flag = True
-        return readlog(), html.P(
+        logger.info("Starting trading...")
+        ret_dict = run_trading_cycle()
+        is_trading_flag = True
+        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
                                                     [
                                                         "Trading ",
                                                         html.Span(
-                                                            "EUR/USD",
+                                                            TRADE_CONFIG.instrument,
                                                             className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                                                         ),
                                                         " with ",
@@ -373,16 +379,16 @@ def real_time_trade(*args):
                                                         ),
                                                         "...",
                                                     ],
-                                                    className="text-slate-400 text-lg select-none",
+                                                    className="animate-pulse text-slate-400 text-lg select-none",
                                                 )
     elif clicked_btn == "dashboard-page-pause-trade-btn" and is_trading_flag:
         logger.info("Pausing trading...")
         is_trading_flag = False
-        return readlog(), html.P(
+        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
             [
                 "Ready to trade ",
                 html.Span(
-                    "EUR/USD",
+                    TRADE_CONFIG.instrument,
                     className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                 ),
                 " with ",
@@ -398,11 +404,11 @@ def real_time_trade(*args):
         # close all trades and stop trading
         close_all_trades(CLIENT_CONFIG.client_api, CLIENT_CONFIG.account_id)
         is_trading_flag = False
-        return readlog(), html.P(
+        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
                     [
                         "Ready to trade ",
                         html.Span(
-                            "EUR/USD",
+                            TRADE_CONFIG.instrument,
                             className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                         ),
                         " with ",
@@ -415,11 +421,11 @@ def real_time_trade(*args):
                 )
     elif is_trading_flag:
         run_trading_cycle()
-        return readlog(), html.P(
+        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
             [
                 "Trading ",
                 html.Span(
-                    "EUR/USD",
+                    TRADE_CONFIG.instrument,
                     className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
                 ),
                 " with ",
@@ -429,11 +435,150 @@ def real_time_trade(*args):
                 ),
                 "..."
             ],
-            className="text-slate-400 text-lg select-none",
+            className="animate-pulse text-slate-400 text-lg select-none",
         )
     else:
         raise PreventUpdate
+@app.callback(
+    Output('oanda-access-token-input', 'value'),
+    Input('oanda-access-token-input', 'value')
+)
+def update_access_token(value):
+    CLIENT_CONFIG.access_token = value
+    return value
 
+# Callback for updating account ID
+@app.callback(
+    Output('oanda-account-id-input', 'value'),
+    Input('oanda-account-id-input', 'value')
+)
+def update_account_id(value):
+    CLIENT_CONFIG.account_id = value
+    return value
+
+# Callback for updating environment
+@app.callback(
+    Output('oanda-account-environment-input', 'value'),
+    Input('oanda-account-environment-input', 'value')
+)
+def update_environment(value):
+    CLIENT_CONFIG.environment = value
+    return value
+@app.callback(
+    Output('trade-instrument-input', 'value'),
+    Input('trade-instrument-input', 'value')
+)
+def update_instrument(value):
+    TRADE_CONFIG.instrument = value
+    logger.info(f"Updated instrument to {value}")
+    return value
+
+# Callback for updating lookback count
+@app.callback(
+    Output('trade-lookback-count-input', 'value'),
+    Input('trade-lookback-count-input', 'value')
+)
+def update_lookback_count(value):
+    TRADE_CONFIG.lookback_count = value
+    return value
+
+# Callback for updating short window
+@app.callback(
+    Output('trade-short-window-input', 'value'),
+    Input('trade-short-window-input', 'value')
+)
+def update_short_window(value):
+    TRADE_CONFIG.st_period = value
+    return value
+
+# Callback for updating long window
+@app.callback(
+    Output('trade-long-window-input', 'value'),
+    Input('trade-long-window-input', 'value')
+)
+def update_long_window(value):
+    TRADE_CONFIG.lt_period = value
+    return value
+
+# Callback for updating hurst window
+@app.callback(
+    Output('trade-hurst-window-input', 'value'),
+    Input('trade-hurst-window-input', 'value')
+)
+def update_hurst_window(value):
+    TRADE_CONFIG.hurst_period = value
+    return value
+
+
+
+# Callback for updating risk factor
+@app.callback(
+    Output('trade-risk-factor-input', 'value'),
+    Input('trade-risk-factor-input', 'value')
+)
+def update_risk_factor(value):
+    try:
+        risk_factor = float(value)
+        TRADE_CONFIG.risk_factor = risk_factor
+        return risk_factor
+    except ValueError:
+        raise PreventUpdate
+
+# Callback for updating risk reward
+@app.callback(
+    Output('trade-risk-reward-input', 'value'),
+    Input('trade-risk-reward-input', 'value')
+)
+def update_risk_reward(value):
+    try:
+        risk_reward = float(value)
+        TRADE_CONFIG.risk_reward = risk_reward
+        return risk_reward
+    except ValueError:
+        raise PreventUpdate
+
+# Callback for updating time interval
+@app.callback(
+    Output('trade-granularity-input', 'value'),
+    Input('trade-granularity-input', 'value')
+)
+def update_granularity(value):
+    try:
+        granularity = str(value)
+        TRADE_CONFIG.granularity = granularity
+        return granularity
+    except ValueError:
+        raise PreventUpdate
+
+# Callback for updating stoploss PnL
+@app.callback(
+    Output('trade-stoploss-pnl-input', 'value'),
+    [Input('trade-risk-factor-input', 'value'),
+     State('trade-stoploss-pnl-input', 'value')]
+)
+def update_stoploss_pnl(risk_factor_value, stoploss_pnl_value):
+    try:
+        risk_factor = float(risk_factor_value)
+        stoploss_pnl = CLIENT_CONFIG.initial_balance * risk_factor
+        return stoploss_pnl
+    except ValueError:
+        raise PreventUpdate
+
+# Callback for updating target PnL
+@app.callback(
+    Output('trade-target-pnl-input', 'value'),
+    [Input('trade-risk-factor-input', 'value'),
+     Input('trade-risk-reward-input', 'value'),
+     State('trade-target-pnl-input', 'value')]
+)
+def update_target_pnl(risk_factor_value, risk_reward_value, target_pnl_value):
+    try:
+        risk_factor = float(risk_factor_value)
+        risk_reward = float(risk_reward_value)
+        target_pnl = CLIENT_CONFIG.initial_balance * risk_factor * risk_reward
+        return target_pnl
+    except ValueError:
+        raise PreventUpdate
 app.layout = html.Div(
     [
         # comment this when using testPage

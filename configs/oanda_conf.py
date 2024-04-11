@@ -1,4 +1,5 @@
 from oandapyV20 import API
+from oandapyV20.endpoints.accounts import AccountDetails
 class ClientConfig:
     def __init__(self, access_token=None, account_id=None, environment='practice'):
         self._provider = "Oanda"
@@ -7,11 +8,22 @@ class ClientConfig:
         self._environment = environment
         self._client_api = None
         self._initialize_client_api()
-
+        self._initial_balance = self.get_current_balance()
     def _initialize_client_api(self):
         if self._access_token and self._environment:
-            self._client_api = API(access_token=self._access_token, environment=self._environment)
+            self._client_api = API(access_token=self._access_token, environment=self._environment, headers={"Accept-Datetime-Format": "RFC3339"})
+            self._initial_balance = self.get_current_balance()
+    def get_current_balance(self):
+        request = AccountDetails(accountID=self.account_id)
+        response = self.client_api.request(request)
 
+        if response and 'account' in response:
+            account_info = response['account']
+            balance = float(account_info['balance'])
+            return balance
+    @property
+    def provider(self):
+        return self._provider
     @property
     def access_token(self):
         return self._access_token
@@ -28,11 +40,20 @@ class ClientConfig:
     def client_api(self):
         return self._client_api
 
+    @property
+    def initial_balance(self):
+        return self._initial_balance
+    
+    @property
+    def current_balance(self):
+        return self.get_current_balance()
+    
     @access_token.setter
     def access_token(self, value):
         if value != self._access_token:
             self._access_token = value
             self._initialize_client_api()
+            
 
     @account_id.setter
     def account_id(self, value):
@@ -43,9 +64,8 @@ class ClientConfig:
         if value != self._environment:
             self._environment = value
             self._initialize_client_api()
-
 class TradeConfig:
-    def __init__(self, instrument, lookback_count, st_period, lt_period, hurst_period, risk_factor, risk_reward, time_interval):
+    def __init__(self, instrument, lookback_count, st_period, lt_period, hurst_period, risk_factor, risk_reward, time_interval, granularity, inposition):
         self._instrument = instrument
         self._lookback_count = lookback_count
         self._st_period = st_period
@@ -54,7 +74,8 @@ class TradeConfig:
         self._risk_factor = risk_factor
         self._risk_reward = risk_reward
         self._time_interval = time_interval
-
+        self._granularity = granularity
+        self._inposition = inposition
     @property
     def instrument(self):
         return self._instrument
@@ -87,6 +108,13 @@ class TradeConfig:
     def time_interval(self):
         return self._time_interval
 
+    @property
+    def inposition(self):
+        return self._inposition
+    
+    @property
+    def granularity(self):
+        return self._granularity
     @instrument.setter
     def instrument(self, value):
         self._instrument = value
@@ -118,6 +146,12 @@ class TradeConfig:
     @time_interval.setter
     def time_interval(self, value):
         self._time_interval = value
+    @granularity.setter
+    def granularity(self, value):
+        self._granularity = value
+    @inposition.setter
+    def inposition(self, value):
+        self._inposition = value
 
 CLIENT_CONFIG = ClientConfig(access_token="9c7349b9a9bd3d17409758cb7e29e53f-7fcbdfe7bc0636788aa51f7e4a95601f",
                                 account_id="101-003-28600525-001",
@@ -128,7 +162,9 @@ TRADE_CONFIG = TradeConfig(instrument='EUR_USD',
                             hurst_period=200,
                             risk_factor=0.016 / 100,
                             risk_reward=0.75,
-                            time_interval=1 * 60)
+                            time_interval=1 * 60,
+                            granularity="S5",
+                            inposition=False)
 
 
 # Client specific configs

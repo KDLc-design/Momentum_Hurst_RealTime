@@ -1,6 +1,7 @@
 from dash import html, dcc
 import dash_ag_grid as dag
 from configs.server_conf import logger
+from dash_iconify import DashIconify
 import dash_mantine_components as dmc
 from datetime import datetime as dt
 from data.store import full_trade_df, trades_df, metrics_df, results_df
@@ -56,12 +57,27 @@ def realtimePrimaryStatsTableComponent():
                         html.Tr(
                             [
                                 html.Td(
-                                    "Current Profit/Loss",
+                                    "Current Balance",
                                     className="font-semibold select-none pl-2",
                                 ),
                                 html.Td(
-                                    "$0.00",
-                                    className="text-emerald-600 pr-2",
+                                    CLIENT_CONFIG.current_balance,
+                                    id="primary-stats-table-current-balance",
+                                    className="text-slate-400 pr-2",
+                                ),
+                            ],
+                            className="border-b border-slate-700",
+                        ),
+                        html.Tr(
+                            [
+                                html.Td(
+                                    "Current PnL",
+                                    className="font-semibold select-none pl-2",
+                                ),
+                                html.Td(
+                                    0,
+                                    id="primary-stats-table-current-pnl",
+                                    className="text-slate-400 pr-2",
                                 ),
                             ],
                             className="border-b border-slate-700",
@@ -73,21 +89,8 @@ def realtimePrimaryStatsTableComponent():
                                     className="font-semibold select-none pl-2",
                                 ),
                                 html.Td(
-                                    "10",
-                                    className="text-emerald-600 pr-2",
-                                ),
-                            ],
-                            className="border-b border-slate-700",
-                        ),
-                        html.Tr(
-                            [
-                                html.Td(
-                                    "Fulfilled Trades",
-                                    className="font-semibold select-none pl-2",
-                                ),
-                                html.Td(
-                                    "100",
-                                    className="text-emerald-600 pr-2",
+                                    0,
+                                    className="text-slate-400 pr-2",
                                 ),
                             ],
                             className="border-b border-slate-700",
@@ -271,7 +274,7 @@ def backtestConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="stocks-input",
                                                 type="text",
                                                 value="AAPL, GOOGL, NFLX, AMZN, META",
@@ -332,7 +335,7 @@ def backtestConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="short-window-input",
                                                 type="number",
                                                 value=5,
@@ -349,7 +352,7 @@ def backtestConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="long-window-input",
                                                 type="number",
                                                 value=21,
@@ -366,10 +369,213 @@ def backtestConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="hurst-window-input",
                                                 type="number",
                                                 value=200,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ]
+                                ),
+                            ],
+                            className="w-full h-full text-slate-400",
+                        ),
+                    ],
+                    className="w-full h-full",
+                )
+            ],
+            className="w-full h-full justify-center items-center p-1 scrollableY",
+        )
+
+def tradeConfigTableComponent():
+    return html.Div(
+            [
+                html.Table(
+                    [
+                        html.Tbody(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Instrument",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-instrument-input",
+                                                type="text",
+                                                value=TRADE_CONFIG.instrument,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Lookback Count",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-lookback-count-input",
+                                                type="text",
+                                                value=TRADE_CONFIG.lookback_count,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Short Window",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-short-window-input",
+                                                type="number",
+                                                value=TRADE_CONFIG.st_period,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Long Window",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-long-window-input",
+                                                type="number",
+                                                value=TRADE_CONFIG.lt_period,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Hurst Window",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-hurst-window-input",
+                                                type="number",
+                                                value=TRADE_CONFIG.hurst_period,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ]
+                                ),
+                            ],
+                            className="w-full h-full text-slate-400",
+                        ),
+                    ],
+                    className="w-full h-full",
+                )
+            ],
+            className="w-full h-full justify-center items-center p-1 scrollableY",
+        )
+def tradeSecondaryConfigTableComponent():
+    return html.Div(
+            [
+                html.Table(
+                    [
+                        html.Tbody(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Risk Factor",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-risk-factor-input",
+                                                type="text",
+                                                value=TRADE_CONFIG.risk_factor,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Risk Reward",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-risk-reward-input",
+                                                type="text",
+                                                value=TRADE_CONFIG.risk_reward,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Granularity",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-granularity-input",
+                                                type="text",
+                                                value=TRADE_CONFIG.granularity,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Stoploss PnL",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-stoploss-pnl-input",
+                                                type="number",
+                                                disabled=True,
+                                                value=CLIENT_CONFIG.initial_balance * TRADE_CONFIG.risk_factor,
+                                                className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
+                                            )
+                                        ),
+                                    ],
+                                    className="border-b border-slate-700",
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td(
+                                            "Target PnL",
+                                            className="font-semibold select-none",
+                                        ),
+                                        html.Td(
+                                            dcc.Input(debounce=True,
+                                                id="trade-target-pnl-input",
+                                                type="number",
+                                                disabled=True,
+                                                value=CLIENT_CONFIG.initial_balance * TRADE_CONFIG.risk_factor * TRADE_CONFIG.risk_reward,
                                                 className="underline underline-offset-2 w-full rounded-md text-slate-500 bg-slate-800 text-sm hover:text-slate-400 focus:text-slate-400 transition duration-300 ease-in-out",
                                             )
                                         ),
@@ -412,7 +618,7 @@ def oandaClientConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="oanda-access-token-input",
                                                 type="text",
                                                 value=CLIENT_CONFIG.access_token,
@@ -429,7 +635,7 @@ def oandaClientConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="oanda-account-id-input",
                                                 type="text",
                                                 value=CLIENT_CONFIG.account_id,
@@ -446,7 +652,7 @@ def oandaClientConfigTableComponent():
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            dcc.Input(
+                                            dcc.Input(debounce=True,
                                                 id="oanda-account-environment-input",
                                                 type="text",
                                                 value=CLIENT_CONFIG.environment,
@@ -459,11 +665,11 @@ def oandaClientConfigTableComponent():
                                 html.Tr(
                                     [
                                         html.Td(
-                                            "Balance",
+                                            "Initial Balance",
                                             className="font-semibold select-none",
                                         ),
                                         html.Td(
-                                            html.Div(get_current_balance(), id="oanda-account-balance", className="text-emerald-500 pr-2"),
+                                            html.Div(CLIENT_CONFIG.initial_balance, id="oanda-account-balance", className="text-emerald-500 pr-2"),
                                         ),
                                     ],
                                     className="border-b border-slate-700",
@@ -505,7 +711,10 @@ def backendTerminalMonitorTableComponent():
 
     return html.Div(
         [
-            html.P("Backend Terminal Monitor", className="font-semibold text-slate-400 text-lg"),
+            html.Div([
+            DashIconify(icon="mdi:terminal", className="text-slate-400 text-2xl"),
+            html.P("Terminal", className="font-semibold text-slate-400 text-lg"),
+                ], className="w-full flex flex-row justify-start gap-2 items-center"),
             html.Div(readlog(), id="dashboard-page-log",className="flex-1 bg-slate-900 h-full font-consolas p-2 rounded-lg"),
         ],
         className="w-full h-full justify-center items-center p-1",

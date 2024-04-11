@@ -3,7 +3,10 @@ from oandapyV20.exceptions import V20Error
 # API processes requests that can be created from the endpoints
 from oandapyV20.endpoints.instruments import InstrumentsCandles
 from hurst import compute_Hc
-
+import os
+import sys
+# set to root path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from configs.oanda_conf import CLIENT_CONFIG
 from configs.server_conf import logger
 
@@ -92,3 +95,5 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
 
     return signal
 #generate_signal("EUR_USD", 200, 5, 20, 100)
+if __name__ == "__main__":
+    print(fetch_candlestick_data("EUR_USD", 200))

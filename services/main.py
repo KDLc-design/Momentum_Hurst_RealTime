@@ -5,24 +5,24 @@ from services.notification import send_email_notification
 import time
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from configs.server_conf import logger
-# helper variables
-instrument = 'EUR_USD'
-lookback_count = 200
-# Changed parameters
-st_period = 5
-lt_period = 21
-hurst_period = 200
+# # helper variables
+# instrument = 'EUR_USD'
+# lookback_count = 200
+# # Changed parameters
+# st_period = 5
+# lt_period = 21
+# hurst_period = 200
 
-inposition = False
+# inposition = False
 
-opening_balance = get_current_balance()
-risk_factor = 0.016 / 100
-stoploss_pnl = opening_balance * risk_factor
-risk_reward = 0.75  # 3/4
-target_pnl = stoploss_pnl * risk_reward
+# risk_factor = 0.016 / 100
+# risk_reward = 0.75  # 3/4
+# time_interval = 1 * 60
 
+opening_balance = CLIENT_CONFIG.initial_balance
+stoploss_pnl = opening_balance * TRADE_CONFIG.risk_factor
+target_pnl = stoploss_pnl * TRADE_CONFIG.risk_reward
 last_print_time = time.time()
-time_interval = 1 * 60
 
 logger.info("Starting balance : {:.2f}".format(opening_balance))
 logger.info("Take Profit initial : {:.2f}".format(target_pnl))
@@ -30,32 +30,23 @@ logger.info("Stop loss initial : {:.2f}".format(stoploss_pnl))
 
 
 def find_quantities_and_trade(instrument, trade_direction):
-    global takeprofit
-    global stoploss
-    global inposition
 
     stoploss, takeprofit, quantity = get_quantity(instrument, trade_direction)
 
     logger.info("--" * 5)
     logger.info("Oanda quantities")
-    logger.info("Instrument:", instrument, " | Vol :", quantity, " | StopLoss :", stoploss, " | Takeprofit :", takeprofit)
+    logger.info(f"Instrument: {instrument} | Vol : {quantity} | StopLoss : {stoploss} | Takeprofit : {takeprofit}")
     # Place orders
     place_market_order(instrument, quantity, takeprofit, stoploss)
 
-    inposition = True
+    TRADE_CONFIG.inposition = True
     time.sleep(3)
 
 
 def update_trade_status():
-    global inposition
-    global opening_balance
-    global stoploss_pnl
-    global target_pnl
-    global risk_factor
-    global risk_reward
-
-    inposition = False
-    opening_balance = get_current_balance()
+    global stoploss_pnl, target_pnl, opening_balance
+    TRADE_CONFIG.inposition = False
+    opening_balance = CLIENT_CONFIG.current_balance
     risk_factor = 0.016 / 100
     stoploss_pnl = opening_balance * risk_factor
     risk_reward = 0.75
@@ -64,10 +55,10 @@ def update_trade_status():
 # Assume all imports and initializations are done above this point
 
 def run_trading_cycle():
-    global inposition, opening_balance, stoploss_pnl, target_pnl, last_print_time
+    global opening_balance, stoploss_pnl, target_pnl, last_print_time
     
     try:
-        if not inposition:
+        if not TRADE_CONFIG.inposition:
             trade_direction = generate_signal(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, TRADE_CONFIG.st_period,TRADE_CONFIG.lt_period, TRADE_CONFIG.hurst_period)
             logger.info(f"----------")
             logger.info(f"Trade Direction: {trade_direction}")
@@ -76,7 +67,7 @@ def run_trading_cycle():
                 find_quantities_and_trade(TRADE_CONFIG.instrument, trade_direction)
                 # send_email_notification()
 
-        if inposition:
+        else:
             positions_dict = get_open_positions()
             long_pnl, short_pnl, total_pnl = calculate_total_unrealised_pnl(positions_dict)
             current_time = time.time()
@@ -106,7 +97,7 @@ def run_trading_cycle():
         logger.info(f"An error occurred: {e}")
     
     return {
-        'inposition': inposition,
+        'inposition': TRADE_CONFIG.inposition,
         'opening_balance': opening_balance,
         'stoploss_pnl': stoploss_pnl,
         'target_pnl': target_pnl

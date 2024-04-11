@@ -5,8 +5,13 @@ import oandapyV20.endpoints.pricing as pricing
 from oandapyV20.endpoints.accounts import AccountDetails
 from oandapyV20.exceptions import V20Error
 # from notification import send_email_notification
+# set os env path
+import os
+import sys
+# set to root path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from configs.oanda_conf import CLIENT_CONFIG
+from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from configs.server_conf import logger
 
 
@@ -89,7 +94,27 @@ def get_open_positions():
     response = CLIENT_CONFIG.client_api.request(request)
     open_positions = response.get("positions", [])
     return open_positions
+def get_filled_orders():
+    from oandapyV20.endpoints import orders
+    import pandas as pd
+    request = orders.OrderList(accountID=CLIENT_CONFIG.account_id,params={'instrument': 'EUR_USD', 'state': 'FILLED','count':10})
 
+    return CLIENT_CONFIG.client_api.request(request)['orders']
+    
+def get_transaction_stream():
+    from oandapyV20.endpoints import transactions
+    import pandas as pd
+    import time
+    request = transactions.TransactionsStream(accountID=CLIENT_CONFIG.account_id)
+    for transaction in CLIENT_CONFIG.client_api.request(request):
+        print(transaction)
+
+def get_transaction_history():
+    from oandapyV20.endpoints import transactions
+    import pandas as pd
+    request = transactions.TransactionList(accountID=CLIENT_CONFIG.account_id,params={'instrument': 'EUR_USD', 'count':10})
+
+    return CLIENT_CONFIG.client_api.request(request)
 
 def calculate_total_unrealised_pnl(positions_dict):
     long_pnl = 0
@@ -168,3 +193,67 @@ def close_all_trades(client, account_id):
                 logger.info(f"Failed to close trade {trade_id}. Error: {e}")
     else:
         logger.info("No open trades to close.")
+
+from oandapyV20.endpoints import transactions
+import time
+from dateutil.parser import isoparse
+def fetch_trade_markers(last_transaction_id=0, from_date=None, to_date=None):
+    # Set up the client and authentication
+
+    # Create a request to get transactions
+    params = {}
+    if last_transaction_id is not None:
+        params["id"] = last_transaction_id
+    if from_date is not None:
+        params["from"] = from_date
+    if to_date is not None:
+        params["to"] = to_date
+    
+    r = transactions.TransactionsSinceID(CLIENT_CONFIG.account_id, params)
+
+    # Fetch the transactions
+    try:
+        response = CLIENT_CONFIG.client_api.request(r)
+    except V20Error as err:
+        print("Error encountered: ", err)
+        return None
+    else:
+        transactions_resp:list = response.get('transactions', [])
+        #early break
+        transactions_resp.reverse()
+        markers = []
+        current_time = time.time()
+        def get_granularity_seconds(granularity):
+            _type = granularity[0]
+            _unit = int(granularity[1:])
+            multiplier = {"S": 1, "M": 60, "H": 3600, "D": 86400}
+            return _unit * multiplier[_type]
+        threshold_time = current_time - TRADE_CONFIG.lookback_count * get_granularity_seconds(TRADE_CONFIG.granularity)
+        # print strftime
+        # Iterate over transactions and extract buy/sell actions
+        for transaction in transactions_resp:
+            if transaction['type'] in ('ORDER_FILL', 'MARKET_ORDER') and transaction['instrument'] == TRADE_CONFIG.instrument:  # Check transaction types
+                _time = transaction['time']
+                # get rid of milliseconds
+                _time = _time.split(".")[0] + "Z"
+                _second_time = isoparse(_time).timestamp()
+                #print(_time,_second_time ,dt.fromtimestamp(_second_time, tz=timezone.utc).isoformat())
+                #print(threshold_time,dt.fromtimestamp(threshold_time, tz=timezone.utc).isoformat(), dt.fromtimestamp(current_time, tz=timezone.utc).isoformat())
+                if _second_time < threshold_time:
+                    continue
+                _units = int(transaction['units'])
+                _buyorsell = 'buy' if _units > 0 else 'sell' if _units < 0 else None
+                _position = 'aboveBar' if _buyorsell == 'sell' else 'belowBar'
+                _color = "rgb(244, 63, 94)" if _buyorsell == "sell" else "rgb(16, 185, 129)"
+                _shape = "arrowDown" if _buyorsell == "sell" else "arrowUp"
+                _text = f"{_buyorsell} {abs(_units)} units"
+                # Only add markers for buy or sell actions
+                if _position:
+                    marker = {'time': _second_time, 'position': _position, 'color': _color, 'shape': _shape, 'text': _text}
+                    markers.append(marker)
+        # if markers is empty, we need to add a dummy transparent marker to avoid error
+        if not markers:
+            markers.append({'time': current_time, 'position': 'aboveBar', 'color': 'rgba(0,0,0,0)', 'shape': 'arrowUp', 'text': ''})
+        return markers
+if __name__ == "__main__":
+    print(fetch_trade_markers( last_transaction_id=0))

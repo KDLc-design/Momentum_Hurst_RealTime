@@ -13,6 +13,7 @@ import random
 from configs.server_conf import logger
 import dash_echarts as dec
 from services.strategy_utils import run_strategy, fetch_data
+from services.risk_manager import fetch_trade_markers
 from components.common.wrappers import paperWrapperComponent
 from components.tables import *
 from datetime import datetime as dt
@@ -37,19 +38,19 @@ def drawer():
             ),
             html.Div(
                 [
-                    backtestConfigTableComponent(),
+                    tradeConfigTableComponent(),
+                ],
+                className="flex-1",
+            ),
+            html.Div(
+                [
+                    tradeSecondaryConfigTableComponent(),
                 ],
                 className="flex-1",
             ),
             html.Div(
                 [
                     backendTerminalMonitorTableComponent(),
-                ],
-                className="flex-1",
-            ),
-            html.Div(
-                [
-                    backtestConfigTableComponent(),
                 ],
                 className="flex-1",
             ),
@@ -205,28 +206,13 @@ def dashboardPage():
         },
         showlegend=False,
     )
-    ticker_records = fetch_data("EUR_USD", 500)
+    ticker_records = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
     stock_full_trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
     # filter the row which has Stock='AAPL'
     # trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
     # Loop through the DataFrame and create markers
     stock_marker_df = trades_df[trades_df["Stock"] == "AAPL"]
-    markers = []
-    for _, row in stock_marker_df.iterrows():
-        marker = {
-            "time": dt.strptime(row["Date"], "%d/%m/%y").strftime(
-                "%Y-%m-%d"
-            ),  # Format the time in a way that's compatible with your charting library
-            "position": "aboveBar" if row["Action"] == "Sell" else "belowBar",
-            "color": (
-                "rgb(244, 63, 94)" if row["Action"] == "Sell" else "rgb(16, 185, 129)"
-            ),
-            "shape": "arrowDown" if row["Action"] == "Sell" else "arrowUp",
-            "text": row["Action"],
-        }
-        markers.append(marker)
-    # sort the markers by time
-    markers.reverse()
+    markers = fetch_trade_markers(last_transaction_id=800)
     shortTermMomentumRecords = []
     longTermMomentumRecords = []
     HurstRecords = []
@@ -262,16 +248,7 @@ def dashboardPage():
                                             [
                                                 html.P(
                                                     [
-                                                        "Ready to trade ",
-                                                        html.Span(
-                                                            "EUR/USD",
-                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
-                                                        ),
-                                                        " with ",
-                                                        html.Span(
-                                                            "Oanda API",
-                                                            className="text-slate-400 underline font-semibold hover:text-slate-200 cursor-pointer transition duration-200 ease-in-out",
-                                                        )
+                                                        "Ready to trade...",
                                                     ],
                                                     className="text-slate-400 text-lg select-none",
                                                 ),
@@ -422,7 +399,7 @@ def dashboardPage():
                                 # {"lineWidth": 1, "color": "#ef4444"},
                                 # {"lineWidth": 1, "color": "#f59e0b"},
                             ],
-                            # seriesMarkers=[markers],
+                            seriesMarkers=[markers],
                             chartOptions={
                                 "layout": {
                                     "background": {"type": "solid", "color": "#0f172a"},
@@ -438,7 +415,7 @@ def dashboardPage():
                                     "timeVisible": True,
                                     "secondsVisible": True,
                                 },
-                                "localization": {"locale": "en-US"},
+                                "localization": {"locale": "en-SG"},
                             },
                             width="75dvw",
                             height="66dvh",

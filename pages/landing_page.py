@@ -39,7 +39,7 @@ def landingPage() -> html.Div:
                     html.Div(
                         [
                             html.H1(
-                                "Visualise",
+                                "Automate",
                                 className="select-none text-3xl lg:text-7xl font-semibold font-urbanist text-slate-50 px-3 py-1 z-50 antialiased",
                             ),
                             html.H3(
@@ -112,6 +112,7 @@ def landingPage() -> html.Div:
                                         "horzLine": {"labelVisible": False},
                                         "vertLine": {"labelVisible": False},
                                     },
+                                "localization": {"locale": "en-SG"},
                                 },
                                 width="100dvw",
                                 height="100dvh",

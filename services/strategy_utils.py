@@ -5,7 +5,7 @@ from ta.volatility import AverageTrueRange
 from ta.trend import SMAIndicator
 from ta.momentum import RSIIndicator
 from ta.volume import VolumeWeightedAveragePrice
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone
 import yfinance as yf
 import math
 import pandas as pd
@@ -275,13 +275,17 @@ def run_strategy(stocks=['AAPL', 'GOOGL', 'NFLX', 'AMZN', 'META'], start_date='2
     return run_strategy_and_analyze(stocks, start_date, end_date, short_window, long_window, hurst_window)
 
 
+from zoneinfo import ZoneInfo
 def fetch_data(instrument_name, lookback_count, granularity='S5', price='M'):
     resp = fetch_candlestick_data(instrument_name, lookback_count, granularity, price)['candles']
     # resp = list[{'complete': True, 'volume': 2, 'time': '', 'mid': {'o': '', 'h': '', 'l': '', 'c': ''}}]
     # convert to list[{'time':'', open:'', high:'', low:'', close:''}]
     resp = [{'time': x['time'], 'open': x['mid']['o'], 'high': x['mid']['h'], 'low': x['mid']['l'], 'close': x['mid']['c']} for x in resp]
-    # convert '2024-04-08T11:30:50.000000000Z' kind of format into UTC time (int)
-    resp = [{'time': int(dt.strptime(x['time'], '%Y-%m-%dT%H:%M:%S.%f000Z').timestamp()), 'open': x['open'], 'high': x['high'], 'low': x['low'], 'close': x['close']} for x in resp]
+    # convert '2024-04-08T11:30:50.000000000Z' kind of format into UTC time (note that we are singapore timezone)
+    def convert_time(time):
+        return dt.strptime(time, '%Y-%m-%dT%H:%M:%S.%f000Z').replace(tzinfo=timezone.utc).timestamp()
+    resp = [{'time':convert_time(x['time']), 'open': x['open'], 'high': x['high'], 'low': x['low'], 'close': x['close']} for x in resp]
+    
     return resp
 if __name__ == '__main__':
     stocks = ['AAPL', 'GOOGL', 'NFLX', 'AMZN', 'META']
