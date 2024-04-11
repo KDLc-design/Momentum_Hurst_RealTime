@@ -13,6 +13,7 @@ import random
 import logging
 import dash_echarts as dec
 from services.strategy_utils import run_strategy, fetch_data
+from services.signal_generator import fetch_candlestick_data
 from components.common.wrappers import paperWrapperComponent
 from datetime import datetime as dt
 import plotly.graph_objs as go
@@ -24,9 +25,10 @@ from pages.dashboard_page import dashboardPage
 from pages.analysis_page import analysisInitialPage, analysisDetailPage
 from components.tables import dmcTableComponent
 from components.figures import visualisationFiguresGrid
-from data.store import trades_df, full_trade_df
+from data.store import trades_df, full_trade_df, transactions_df
 from services.main import run_trading_cycle, close_all_trades
-from services.risk_manager import fetch_trade_markers
+from services.risk_manager import fetch_trade_markers, fetch_recent_transactions_df, get_pending_trades_num
+
 app.clientside_callback(
     ClientsideFunction(
         namespace="clientside", function_name="transitionToDashboardPage"
@@ -82,11 +84,14 @@ def update_landing_page_candlestick(
     Returns:
         list[list[dict]]: updated series data.
     """
-    return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
+    return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)[0]]
 
 @app.callback(
     Output("dashboard-page-candlestick-chart", "seriesMarkers"),
     Output("dashboard-page-candlestick-chart", "seriesData"),
+    Output("infinite-grid-transactions", "rowData"),
+    Output("primary-stats-table-pending-trades","children"),
+    Output("returns-comparison-line-fig", "figure"),
     # Output("landing-page-candlestick-chart-store", "data"),
     # Input("landing-page-candlestick-chart", "seriesData"),
     Input("dashboard-page-candlestick-chart-interval", "n_intervals"),
@@ -98,9 +103,7 @@ def update_landing_page_candlestick(
     # Input("navbar-goog", "n_clicks"),
     prevent_initial_call=True,
 )
-def update_dashboard_page_candlestick(
-    *args#seriesData: list[list[dict]], nIntervals: int, data: dict[list], *args
-) -> list[list[dict]]:
+def update_dashboard_primary_page(*args) -> list[list[dict]]:
     """Update the candlestick chart on the landing page. Either by clicking on the navbar or by the interval dynamic update.
 
     Args:
@@ -114,7 +117,57 @@ def update_dashboard_page_candlestick(
     # logger.info(f"Fetching {TRADE_CONFIG.lookback_count} data for {TRADE_CONFIG.instrument}, data size {len(data)}")
     # markers = fetch_trade_markers()
     # logger.info(markers)
-    return [fetch_trade_markers()],[fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
+    global transactions_df
+    transactions_df = fetch_recent_transactions_df()
+    pending_trades_num = get_pending_trades_num()
+    markers =[ fetch_trade_markers(last_transaction_id=800)]
+    candlestick_data, benchmark_data, strategy_returns_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
+    benchmark_data = pd.DataFrame(benchmark_data)
+    strategy_returns_data = pd.DataFrame(strategy_returns_data)
+    # benchmark_data.reset_index(inplace=True)
+    # strategy_returns_data.reset_index(inplace=True)
+    # ensure float values
+    benchmark_data["value"] = benchmark_data["value"].astype(float)
+    strategy_returns_data["value"] = strategy_returns_data["value"].astype(float)
+    returns_comparison_line_fig = go.Figure()
+    returns_comparison_line_fig.add_trace(
+        go.Scatter(
+            x=benchmark_data['time'],
+            y=benchmark_data['value'],
+            mode="lines",
+            name="Benchmark",
+            line=dict(color="rgb(16, 185, 129)"),
+        )
+    )
+    returns_comparison_line_fig.add_trace(
+        go.Scatter(
+            x=strategy_returns_data['time'],
+            y=strategy_returns_data['value'],
+            mode="lines",
+            name="Strategy",
+            line=dict(color="rgb(244, 63, 94)"),
+        )
+    )
+    returns_comparison_line_fig.update_layout(
+        autosize=True,
+        margin=dict(l=0, r=20, t=10, b=0),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="rgb(100,116,139)"),
+        xaxis={"showticklabels": False, "title": "Date", "showgrid": False},
+        yaxis={
+            "title": "Returns",
+            "showgrid": False,
+            "zerolinecolor": "rgb(148, 163, 184)",
+        },
+        showlegend=False,
+    )
+    
+    # print(candlestick_data)
+    # print(benchmark_data)
+    # print(strategy_returns_data)
+    seriesData = [candlestick_data]
+    return markers, seriesData, transactions_df.to_dict("records"), str(pending_trades_num), returns_comparison_line_fig
 
 @app.callback(
     Output("analysis-page-inner-container", "children"),
@@ -205,7 +258,6 @@ def infinite_scroll_trade(request):
         raise PreventUpdate
     partial = trades_df.iloc[request["startRow"] : request["endRow"]]
     return {"rowData": partial.to_dict("records"), "rowCount": len(trades_df.index)}
-
 
 
 
@@ -318,17 +370,15 @@ def update_output(
 )
 def drawer_demo(n_clicks):
     return True
-@app.callback(
-    Output("dashboard-page-log", "children"),
-    Input("dashboard-page-trade-interval", "n_intervals"),
-)
-def update_log(n_intervals):
+
+def update_log():
     with open("app.log", "r") as f:
         lines = f.readlines()[-100:]
         lines.reverse()
     return html.Div([html.P(line) for line in lines], className="w-full h-full scrollableY")
 is_trading_flag = False
 @app.callback(
+    Output("dashboard-page-log", "children"),
     Output("primary-stats-table-current-balance", "children"),
     Output("primary-stats-table-current-pnl", "children"),
     Output("dashboard-page-trade-title", "children"),
@@ -344,7 +394,7 @@ def real_time_trade(*args):
         raise PreventUpdate
     clicked_btn = ctx.triggered[0]["prop_id"].split(".")[0]
     if is_trading_flag and clicked_btn == "dashboard-page-start-trade-btn":
-        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
+        return update_log(), CLIENT_CONFIG.current_balance, CLIENT_CONFIG.current_balance - CLIENT_CONFIG.initial_balance, html.P(
                                                     [
                                                         "Trading ",
                                                         html.Span(
@@ -365,7 +415,7 @@ def real_time_trade(*args):
         logger.info("Starting trading...")
         ret_dict = run_trading_cycle()
         is_trading_flag = True
-        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
+        return update_log(), CLIENT_CONFIG.current_balance, CLIENT_CONFIG.current_balance - CLIENT_CONFIG.initial_balance, html.P(
                                                     [
                                                         "Trading ",
                                                         html.Span(
@@ -384,7 +434,7 @@ def real_time_trade(*args):
     elif clicked_btn == "dashboard-page-pause-trade-btn" and is_trading_flag:
         logger.info("Pausing trading...")
         is_trading_flag = False
-        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
+        return update_log(), CLIENT_CONFIG.current_balance, CLIENT_CONFIG.current_balance - CLIENT_CONFIG.initial_balance, html.P(
             [
                 "Ready to trade ",
                 html.Span(
@@ -404,7 +454,7 @@ def real_time_trade(*args):
         # close all trades and stop trading
         close_all_trades(CLIENT_CONFIG.client_api, CLIENT_CONFIG.account_id)
         is_trading_flag = False
-        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
+        return update_log(), CLIENT_CONFIG.current_balance, CLIENT_CONFIG.current_balance - CLIENT_CONFIG.initial_balance, html.P(
                     [
                         "Ready to trade ",
                         html.Span(
@@ -421,7 +471,7 @@ def real_time_trade(*args):
                 )
     elif is_trading_flag:
         run_trading_cycle()
-        return CLIENT_CONFIG.current_balance, CLIENT_CONFIG.initial_balance - CLIENT_CONFIG.current_balance, html.P(
+        return update_log(), CLIENT_CONFIG.current_balance, CLIENT_CONFIG.current_balance - CLIENT_CONFIG.initial_balance, html.P(
             [
                 "Trading ",
                 html.Span(

@@ -20,8 +20,7 @@ from datetime import datetime as dt
 import plotly.graph_objs as go
 from textwrap import dedent
 from dash_iconify import DashIconify
-from data.store import results_df, trades_df, full_trade_df
-
+from data.store import results_df, trades_df, full_trade_df, strategy_returns
 
 def drawer():
     return dmc.Drawer(
@@ -206,12 +205,52 @@ def dashboardPage():
         },
         showlegend=False,
     )
-    ticker_records = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
+    candlestick_data, benchmark_data, strategy_returns_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
+    benchmark_data = pd.DataFrame(benchmark_data)
+    strategy_returns_data = pd.DataFrame(strategy_returns_data)
+    # benchmark_data.reset_index(inplace=True)
+    # strategy_returns_data.reset_index(inplace=True)
+    # ensure float values
+    benchmark_data["value"] = benchmark_data["value"].astype(float)
+    strategy_returns_data["value"] = strategy_returns_data["value"].astype(float)
+    returns_comparison_line_fig = go.Figure()
+    returns_comparison_line_fig.add_trace(
+        go.Scatter(
+            x=benchmark_data['time'],
+            y=benchmark_data['value'],
+            mode="lines",
+            name="Benchmark",
+            line=dict(color="rgb(16, 185, 129)"),
+        )
+    )
+    returns_comparison_line_fig.add_trace(
+        go.Scatter(
+            x=strategy_returns_data['time'],
+            y=strategy_returns_data['value'],
+            mode="lines",
+            name="Strategy",
+            line=dict(color="rgb(244, 63, 94)"),
+        )
+    )
+    returns_comparison_line_fig.update_layout(
+        autosize=True,
+        margin=dict(l=0, r=20, t=10, b=0),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="rgb(100,116,139)"),
+        xaxis={"showticklabels": False, "title": "Date", "showgrid": False},
+        yaxis={
+            "title": "Returns",
+            "showgrid": False,
+            "zerolinecolor": "rgb(148, 163, 184)",
+        },
+        showlegend=False,
+    )
+    
     stock_full_trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
     # filter the row which has Stock='AAPL'
     # trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
     # Loop through the DataFrame and create markers
-    stock_marker_df = trades_df[trades_df["Stock"] == "AAPL"]
     markers = fetch_trade_markers(last_transaction_id=800)
     shortTermMomentumRecords = []
     longTermMomentumRecords = []
@@ -298,58 +337,26 @@ def dashboardPage():
                 ],
                 className="row-span-1 col-span-1 flex justify-center items-center",
             ),
+            # html.Div(
+            #     [
+            #         paperWrapperComponent(
+            #             html.Div(
+            #                 [
+            #                     benchmarkStatsTableComponent()
+            #                 ],
+            #                 className="w-full h-full justify-center items-center p-2 scrollableY",
+            #             ),
+            #         ),
+            #     ],
+            #     className="row-span-1 col-span-1 flex justify-center items-center",
+            # ),
             html.Div(
                 [
                     paperWrapperComponent(
-                        html.Div(
-                            [
-                                benchmarkStatsTableComponent()
-                            ],
-                            className="w-full h-full justify-center items-center p-2 scrollableY",
-                        ),
-                    ),
+                        dmcTableComponent("infinite-grid-transactions")
+                    )
                 ],
-                className="row-span-1 col-span-1 flex justify-center items-center",
-            ),
-            html.Div(
-                [
-                    paperWrapperComponent(
-                        dag.AgGrid(
-                            id="infinite-grid-trade",
-                            className="ag-theme-alpine pl-1",
-                            columnSize="sizeToFit",
-                            columnDefs=[
-                                {"field": col, "cellClass": "text-slate-400 text-xs"}
-                                for col in trades_df.columns
-                            ],
-                            defaultColDef={"sortable": True},
-                            # getRowStyle={
-                            #    "styleConditions":[
-                            #    {
-                            #        "condition":"params.data.Action == 'Buy'",
-                            #        "style": {"textColor":"rgb(34 197 94)"}
-                            #    },
-                            #    {
-                            #        "condition":"params.data.Action == 'Sell'",
-                            #        "style": {"textColor":"rgb(239 68 68)"}
-                            #    }
-                            #    ],
-                            #    "defaultStyle": {"textColor":"white"},
-                            # },
-                            rowModelType="infinite",
-                            dashGridOptions={
-                                # The number of rows rendered outside the viewable area the grid renders.
-                                "rowBuffer": 10,
-                                # How many blocks to keep in the store. Default is no limit, so every requested block is kept.
-                                "maxBlocksInCache": 1,
-                                # "rowSelection": "multiple",
-                                #'suppressHorizontalScroll':True,
-                            },
-                        )
-                    ),
-                    html.Div(id="infinite-output-trade", style={"display": "none"}),
-                ],
-                className="row-span-1 col-span-1 flex justify-center items-center",
+                className="row-span-1 col-span-2 flex justify-center items-center",
             ),
             html.Div(
                 [
@@ -378,7 +385,9 @@ def dashboardPage():
                         dash_tvlwc.Tvlwc(
                             id="dashboard-page-candlestick-chart",
                             seriesData=[
-                                ticker_records,
+                                candlestick_data,
+                                # benchmark_data,
+                                #strategy_returns_data
                                 # shortTermMomentumRecords,
                                 # longTermMomentumRecords,
                                 # HurstRecords,
@@ -387,7 +396,7 @@ def dashboardPage():
                             seriesTypes=[
                                 "candlestick",
                                 # "line",
-                                # "line",
+                                #"line",
                                 # "line",
                             ],
                             seriesOptions=[
@@ -445,8 +454,8 @@ def dashboardPage():
                     paperWrapperComponent(
                         # visualise 'cumulative_portfolio_returns' and 'cumulative_portfolio_strategy' in a line chart
                         dcc.Graph(
-                            id="rolling-sharpe-chart",
-                            figure=rollingSharpeFig,
+                            id="returns-comparison-line-fig",
+                            figure=returns_comparison_line_fig,
                             responsive=True,
                             config={"displayModeBar": False},
                             style={"width": "100%", "height": "100%"},

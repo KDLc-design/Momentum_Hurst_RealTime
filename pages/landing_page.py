@@ -9,7 +9,7 @@ def landingPage() -> html.Div:
         html.Div: landing page layout.
     """
     bufferSymbol = "EUR_USD"
-    candlestickData = fetch_data(bufferSymbol, 200)
+    candlestickData = fetch_data(bufferSymbol, 200)[0]
     #logger.info(f"Landing page layout. yfinance data downloaded for {bufferSymbol}. len: {len(candlestickData)}")
     return html.Div(
         [

@@ -2,6 +2,10 @@ import oandapyV20.endpoints.positions as positions
 import oandapyV20.endpoints.orders as orders
 import oandapyV20.endpoints.trades as trades
 import oandapyV20.endpoints.pricing as pricing
+from oandapyV20.endpoints import transactions
+import time
+import pandas as pd
+from dateutil.parser import isoparse
 from oandapyV20.endpoints.accounts import AccountDetails
 from oandapyV20.exceptions import V20Error
 # from notification import send_email_notification
@@ -140,6 +144,10 @@ def get_current_balance():
         balance = float(account_info['balance'])
         return balance
 
+def get_pending_trades_num():
+    request = orders.OrdersPending(accountID=CLIENT_CONFIG.account_id)
+    response = CLIENT_CONFIG.client_api.request(request)
+    return len(response['orders'])
 
 def place_market_order(instrument, units, take_profit_price, stop_loss_price):
     data = {
@@ -193,10 +201,38 @@ def close_all_trades(client, account_id):
                 logger.info(f"Failed to close trade {trade_id}. Error: {e}")
     else:
         logger.info("No open trades to close.")
-
-from oandapyV20.endpoints import transactions
-import time
-from dateutil.parser import isoparse
+def fetch_recent_transactions_df(n_rows=100):
+    # Set up the client and authentication
+    # Create a request to get transactions
+    r = transactions.TransactionList(CLIENT_CONFIG.account_id)
+    # Fetch the transactions
+    try:
+        response = CLIENT_CONFIG.client_api.request(r)
+    except V20Error as err:
+        print("Error encountered: ", err)
+        return None
+    last_transaction_id = int(response.get('lastTransactionID', 0))
+    if last_transaction_id == 0:
+        return None
+    min_transaction_id = max(0, last_transaction_id - n_rows)
+    r = transactions.TransactionsSinceID(CLIENT_CONFIG.account_id, {"id": min_transaction_id})
+    response = CLIENT_CONFIG.client_api.request(r)
+    transactions_resp:list[dict] = response.get('transactions', [])
+    # generate a dataframe
+    df = pd.DataFrame(transactions_resp)[['time', 'type', 'reason', 'units', 'price', 'closedTradeID', 'tradeID']]
+    # combine the tradeID and closedTradeID
+    df['tradeID'] = df['tradeID'].combine_first(df['closedTradeID'])
+    # drop the closedTradeID column
+    df.drop(columns=['closedTradeID'], inplace=True)
+    # convert the time column to datetime
+    df['time'] = pd.to_datetime(df['time'])
+    # sort the dataframe by most recent time
+    df.sort_values(by='time', ascending=False, inplace=True)
+    # time should display as "%Y-%m-%d %H:%M:%S"
+    df['time'] = df['time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+    #df.dropna(inplace=True)
+    #print(df.columns.to_list())
+    return df
 def fetch_trade_markers(last_transaction_id=0, from_date=None, to_date=None):
     # Set up the client and authentication
 
@@ -256,4 +292,4 @@ def fetch_trade_markers(last_transaction_id=0, from_date=None, to_date=None):
             markers.append({'time': current_time, 'position': 'aboveBar', 'color': 'rgba(0,0,0,0)', 'shape': 'arrowUp', 'text': ''})
         return markers
 if __name__ == "__main__":
-    print(fetch_trade_markers( last_transaction_id=0))
+    print(get_pending_trades_num())

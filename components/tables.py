@@ -4,7 +4,7 @@ from configs.server_conf import logger
 from dash_iconify import DashIconify
 import dash_mantine_components as dmc
 from datetime import datetime as dt
-from data.store import full_trade_df, trades_df, metrics_df, results_df
+from data.store import full_trade_df, trades_df, metrics_df, results_df, transactions_df
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from services.risk_manager import get_current_balance
 def dmcTableComponent(id):
@@ -26,6 +26,10 @@ def dmcTableComponent(id):
         dashGridOptions = {}
     elif id == "analysis-page-infinite-grid-results":
         columnDefs = [{"field": col} for col in results_df.columns]
+    elif id == "infinite-grid-transactions":
+        columnDefs = [{"field": col} for col in transactions_df.columns]
+        rowModelType = "clientSide"
+        dashGridOptions = {}
     else:
         #logger.error("Invalid id for dmcTableComponent", id)
         raise ValueError("Invalid id for dmcTableComponent")
@@ -40,6 +44,14 @@ def dmcTableComponent(id):
     }
     if id == "analysis-page-infinite-grid-metrics":
         AgGridConfig["rowData"] = metrics_df.to_dict("records")
+    if id == "infinite-grid-transactions":
+        AgGridConfig["rowData"] = transactions_df.to_dict("records")
+        return html.Div(
+            [
+                dag.AgGrid(style={"width": "100%", "height": "100%"}, **AgGridConfig),
+            ],
+            className="w-full h-full",
+        )
     return html.Div(
         [
             dag.AgGrid(style={"width": "100%", "height": "100%"}, **AgGridConfig),
@@ -90,6 +102,7 @@ def realtimePrimaryStatsTableComponent():
                                 ),
                                 html.Td(
                                     0,
+                                    id="primary-stats-table-pending-trades",
                                     className="text-slate-400 pr-2",
                                 ),
                             ],

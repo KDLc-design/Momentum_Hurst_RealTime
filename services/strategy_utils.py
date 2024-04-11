@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from hurst import compute_Hc
 from .signal_generator import fetch_candlestick_data
 from configs.server_conf import logger
+from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 pd.options.mode.chained_assignment = None  # default='warn'
 # init methond to construct and provide all thevariables that will be required by the strategy
 
@@ -276,6 +277,7 @@ def run_strategy(stocks=['AAPL', 'GOOGL', 'NFLX', 'AMZN', 'META'], start_date='2
 
 
 from zoneinfo import ZoneInfo
+from data.store import strategy_returns, benchmark_returns
 def fetch_data(instrument_name, lookback_count, granularity='S5', price='M'):
     resp = fetch_candlestick_data(instrument_name, lookback_count, granularity, price)['candles']
     # resp = list[{'complete': True, 'volume': 2, 'time': '', 'mid': {'o': '', 'h': '', 'l': '', 'c': ''}}]
@@ -284,9 +286,24 @@ def fetch_data(instrument_name, lookback_count, granularity='S5', price='M'):
     # convert '2024-04-08T11:30:50.000000000Z' kind of format into UTC time (note that we are singapore timezone)
     def convert_time(time):
         return dt.strptime(time, '%Y-%m-%dT%H:%M:%S.%f000Z').replace(tzinfo=timezone.utc).timestamp()
-    resp = [{'time':convert_time(x['time']), 'open': x['open'], 'high': x['high'], 'low': x['low'], 'close': x['close']} for x in resp]
-    
-    return resp
+    candlestick_data = [{'time':convert_time(x['time']), 'open': x['open'], 'high': x['high'], 'low': x['low'], 'close': x['close']} for x in resp]
+    benchmark_data = [{'time': x['time'], 'value': x['close']} for x in candlestick_data]
+    global strategy_returns, benchmark_returns
+    if len(strategy_returns) == 0:
+        strategy_returns = [{'time': x['time'], 'value': 1} for x in candlestick_data]
+        benchmark_returns = [x for x in benchmark_data]
+    else:
+        # check missing time points in strategy returns according to the candlestick data
+        missing_time_points = [x for x in candlestick_data if x['time'] not in [y['time'] for y in strategy_returns]]
+        # these are essentially the newest data points that are not in the strategy returns
+        # we need to append these to the strategy returns
+        current_balance = CLIENT_CONFIG.current_balance
+        for point in missing_time_points:
+            strategy_returns.append({'time': point['time'], 'value': current_balance / CLIENT_CONFIG.initial_balance})
+            benchmark_returns.append({'time': point['time'], 'value': point['close']})
+        #print(list(strategy_returns))
+
+    return candlestick_data, benchmark_returns, strategy_returns
 if __name__ == '__main__':
     stocks = ['AAPL', 'GOOGL', 'NFLX', 'AMZN', 'META']
     start_date = '2015-01-01'
