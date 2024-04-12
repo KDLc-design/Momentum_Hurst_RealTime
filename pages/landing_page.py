@@ -1,6 +1,6 @@
 from dash import html, dcc
 from dash_tvlwc import Tvlwc
-from services.signal_generator import fetch_data
+from services.utils import fetch_data
 from configs.server_conf import logger
 def landingPage() -> html.Div:
     """Landing page layout.

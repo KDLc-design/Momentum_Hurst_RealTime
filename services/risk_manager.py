@@ -4,6 +4,7 @@ import oandapyV20.endpoints.trades as trades
 import oandapyV20.endpoints.pricing as pricing
 from oandapyV20.endpoints import transactions
 import time
+import numpy as np
 import pandas as pd
 from dateutil.parser import isoparse
 from oandapyV20.endpoints.accounts import AccountDetails
@@ -234,8 +235,6 @@ def fetch_recent_transactions_df(n_rows=100):
     #print(df.columns.to_list())
     return df
 def fetch_trade_markers(last_transaction_id=0, from_date=None, to_date=None):
-    # Set up the client and authentication
-
     # Create a request to get transactions
     params = {}
     if last_transaction_id is not None:
@@ -265,31 +264,53 @@ def fetch_trade_markers(last_transaction_id=0, from_date=None, to_date=None):
             multiplier = {"S": 1, "M": 60, "H": 3600, "D": 86400}
             return _unit * multiplier[_type]
         threshold_time = current_time - TRADE_CONFIG.lookback_count * get_granularity_seconds(TRADE_CONFIG.granularity)
-        # print strftime
-        # Iterate over transactions and extract buy/sell actions
-        for transaction in transactions_resp:
-            if transaction['type'] in ('ORDER_FILL', 'MARKET_ORDER') and transaction['instrument'] == TRADE_CONFIG.instrument:  # Check transaction types
-                _time = transaction['time']
-                # get rid of milliseconds
-                _time = _time.split(".")[0] + "Z"
-                _second_time = isoparse(_time).timestamp()
-                #print(_time,_second_time ,dt.fromtimestamp(_second_time, tz=timezone.utc).isoformat())
-                #print(threshold_time,dt.fromtimestamp(threshold_time, tz=timezone.utc).isoformat(), dt.fromtimestamp(current_time, tz=timezone.utc).isoformat())
-                if _second_time < threshold_time:
-                    continue
-                _units = int(transaction['units'])
-                _buyorsell = 'buy' if _units > 0 else 'sell' if _units < 0 else None
-                _position = 'aboveBar' if _buyorsell == 'sell' else 'belowBar'
-                _color = "rgb(244, 63, 94)" if _buyorsell == "sell" else "rgb(16, 185, 129)"
-                _shape = "arrowDown" if _buyorsell == "sell" else "arrowUp"
-                _text = f"{_buyorsell} {abs(_units)} units"
-                # Only add markers for buy or sell actions
-                if _position:
-                    marker = {'time': _second_time, 'position': _position, 'color': _color, 'shape': _shape, 'text': _text}
-                    markers.append(marker)
+        transactions_resp_df = pd.DataFrame(transactions_resp)
+        del transactions_resp
+        transactions_resp_df = transactions_resp_df[transactions_resp_df['type'].isin(['ORDER_FILL', 'MARKET_ORDER']) & (transactions_resp_df['instrument'] == TRADE_CONFIG.instrument)]
+        transactions_resp_df['time'] = transactions_resp_df['time'].apply(lambda x: isoparse(x.split(".")[0]+"Z").timestamp())
+        transactions_resp_df = transactions_resp_df[transactions_resp_df['time'] > threshold_time]
+        transactions_resp_df['units'] = transactions_resp_df['units'].astype(int)
+        transactions_resp_df['buyorsell'] = np.where(transactions_resp_df['units'] > 0,
+                                                        'buy',
+                                                        np.where(transactions_resp_df['units'] < 0, 'sell', None))
+        transactions_resp_df['position'] = np.where(transactions_resp_df['buyorsell'] == 'sell', 'aboveBar', 'belowBar')
+        transactions_resp_df['color'] = np.where(transactions_resp_df['buyorsell'] == 'sell', 'rgb(244, 63, 94)', 'rgb(16, 185, 129)')
+        transactions_resp_df['shape'] = np.where(transactions_resp_df['buyorsell'] == 'sell', 'arrowDown', 'arrowUp')
+        transactions_resp_df['text'] = transactions_resp_df['buyorsell'] + " " + transactions_resp_df['units'].abs().astype(str) + " units"
+        markers = transactions_resp_df[['time', 'position', 'color', 'shape', 'text']].to_dict(orient='records')
+        #print(markers)
+        # # convert time to seconds
+        # # print strftime
+        # # Iterate over transactions and extract buy/sell actions
+        # for transaction in transactions_resp:
+        #     if transaction['type'] in ('ORDER_FILL', 'MARKET_ORDER') and transaction['instrument'] == TRADE_CONFIG.instrument:  # Check transaction types
+        #         _time = transaction['time']
+        #         # get rid of milliseconds
+        #         _time = _time.split(".")[0] + "Z"
+        #         _second_time = isoparse(_time).timestamp()
+        #         #print(_time,_second_time ,dt.fromtimestamp(_second_time, tz=timezone.utc).isoformat())
+        #         #print(threshold_time,dt.fromtimestamp(threshold_time, tz=timezone.utc).isoformat(), dt.fromtimestamp(current_time, tz=timezone.utc).isoformat())
+        #         if _second_time < threshold_time:
+        #             continue
+        #         _units = int(transaction['units'])
+        #         _buyorsell = 'buy' if _units > 0 else 'sell' if _units < 0 else None
+        #         _position = 'aboveBar' if _buyorsell == 'sell' else 'belowBar'
+        #         _color = "rgb(244, 63, 94)" if _buyorsell == "sell" else "rgb(16, 185, 129)"
+        #         _shape = "arrowDown" if _buyorsell == "sell" else "arrowUp"
+        #         _text = f"{_buyorsell} {abs(_units)} units"
+        #         # Only add markers for buy or sell actions
+        #         if _position:
+        #             marker = {'time': _second_time, 'position': _position, 'color': _color, 'shape': _shape, 'text': _text}
+        #             markers.append(marker)
         # if markers is empty, we need to add a dummy transparent marker to avoid error
         if not markers:
             markers.append({'time': current_time, 'position': 'aboveBar', 'color': 'rgba(0,0,0,0)', 'shape': 'arrowUp', 'text': ''})
         return markers
+    
+def get_instrument_positions(instrument):
+    request = positions.OpenPositions(accountID=CLIENT_CONFIG.account_id)
+    response = CLIENT_CONFIG.client_api.request(request).get("positions", [])
+    return response[0] if response else {}
+
 if __name__ == "__main__":
-    print(get_pending_trades_num())
+    print(get_instrument_positions('EUR_USD'))

@@ -6,7 +6,6 @@ import dash_mantine_components as dmc
 from datetime import datetime as dt
 from data.store import transactions_df
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
-from services.risk_manager import get_current_balance
 def dmcTableComponent(id):
     rowModelType = "infinite"
     dashGridOptions = {
@@ -25,7 +24,7 @@ def dmcTableComponent(id):
         raise ValueError("Invalid id for dmcTableComponent")
     AgGridConfig = {
         "id": id,
-        "columnSize": "sizeToFit",
+        "columnSize": "responsiveSizeToFit" if id=="infinite-grid-transactions" else "auto",
         "className": "ag-theme-alpine",
         "columnDefs": columnDefs,
         "defaultColDef": {"sortable": True},
@@ -103,7 +102,7 @@ def realtimePrimaryStatsTableComponent():
             className="w-full h-full",
         )
 
-def benchmarkStatsTableComponent():
+def openPositionStatsTableComponent():
     return html.Table(
                                     [
                                         html.Tbody(
@@ -112,145 +111,88 @@ def benchmarkStatsTableComponent():
                                                     [
                                                         html.Th(),
                                                         html.Th(
-                                                            "Benchmark",
-                                                            className="font-semibold text-start",
+                                                            "Long",
+                                                            className="font-semibold text-start w-1/4 lg:w-1/3",
                                                         ),
                                                         html.Th(
-                                                            "Strategy",
-                                                            className="font-semibold text-start",
+                                                            "Short",
+                                                            className="font-semibold text-start w-1/4 lg:w-1/3",
                                                         ),
                                                     ],
                                                     className="border-b border-slate-700",
                                                 ),
-                                                # Annual Return
                                                 html.Tr(
                                                     [
                                                         html.Td(
-                                                            "Annual Return",
+                                                            "Units",
                                                             className="font-semibold select-none",
                                                         ),
-                                                        # get the annual return from the metrics_df, column name is 'Annual Return', row index is "Portfolio Returns"
-                                                        # html.Td(
-                                                        #     metrics_df.loc[
-                                                        #         "Portfolio Returns",
-                                                        #         "Annual Return",
-                                                        #     ].round(3),
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Annual Return",
-                                                        #         ].round(3)
-                                                        #         > metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Annual Return",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
-                                                        # html.Td(
-                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Annual Return"].round(3)} {format_percentage_difference("Annual Return")}',
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Annual Return",
-                                                        #         ].round(3)
-                                                        #         < metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Annual Return",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-long-units",
+                                                            className="text-slate-500"
+                                                        ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-short-units",
+                                                            className="text-slate-500"
+                                                        ),
                                                     ],
                                                     className="border-b border-slate-700",
                                                 ),
-                                                # Annual Std
                                                 html.Tr(
                                                     [
                                                         html.Td(
-                                                            "Annual Std",
+                                                            "Avg Price",
                                                             className="font-semibold select-none",
                                                         ),
-                                                        # get the annual std from the metrics_df, column name is 'Annual Std', row index is "Portfolio Returns"
-                                                        # html.Td(
-                                                        #     metrics_df.loc[
-                                                        #         "Portfolio Returns",
-                                                        #         "Annual Std",
-                                                        #     ].round(3),
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Annual Std",
-                                                        #         ].round(3)
-                                                        #         > metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Annual Std",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
-                                                        # html.Td(
-                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Annual Std"].round(3)} {format_percentage_difference("Annual Std")}',
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Annual Std",
-                                                        #         ].round(3)
-                                                        #         < metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Annual Std",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-long-avg-price",
+                                                            className="text-slate-500"
+                                                        ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-short-avg-price",
+                                                            className="text-slate-500"
+                                                        ),
                                                     ],
                                                     className="border-b border-slate-700",
                                                 ),
-                                                # sharpe ratio
                                                 html.Tr(
                                                     [
                                                         html.Td(
-                                                            "Sharpe Ratio",
+                                                            "Unrealized PnL",
                                                             className="font-semibold select-none",
                                                         ),
-                                                        # get the sharpe ratio from the metrics_df, column name is 'Sharpe Ratio', row index is "Portfolio Strategy"
-                                                        # html.Td(
-                                                        #     metrics_df.loc[
-                                                        #         "Portfolio Returns",
-                                                        #         "Sharpe Ratio",
-                                                        #     ].round(3),
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Sharpe Ratio",
-                                                        #         ].round(3)
-                                                        #         > metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Sharpe Ratio",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
-                                                        # html.Td(
-                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Sharpe Ratio"].round(3)} {format_percentage_difference("Sharpe Ratio")}',
-                                                        #     className=(
-                                                        #         "text-emerald-500"
-                                                        #         if metrics_df.loc[
-                                                        #             "Portfolio Returns",
-                                                        #             "Sharpe Ratio",
-                                                        #         ].round(3)
-                                                        #         < metrics_df.loc[
-                                                        #             "Portfolio Strategy",
-                                                        #             "Sharpe Ratio",
-                                                        #         ].round(3)
-                                                        #         else "text-rose-500"
-                                                        #     ),
-                                                        # ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-long-unrealized-pnl",
+                                                            className="text-slate-500"
+                                                        ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-short-unrealized-pnl",
+                                                            className="text-slate-500"
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Tr(
+                                                    [
+                                                        html.Td(
+                                                            "Margin Used",
+                                                            className="font-semibold select-none",
+                                                        ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-long-margin-used",
+                                                            className="text-slate-500"
+                                                        ),
+                                                        html.Td(
+                                                            0,
+                                                            id="open-position-stats-table-short-margin-used",
+                                                            className="text-slate-500"
+                                                        ),
                                                     ],
                                                 ),
                                             ],

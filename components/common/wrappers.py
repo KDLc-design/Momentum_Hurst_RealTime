@@ -1,9 +1,9 @@
 from dash import html
 
-def paperWrapperComponent(dom):
+def paperWrapperComponent(dom, classname=""):
     return html.Div(
         [dom],
-        className="w-full h-full flex flex-col justify-center items-center p-0 bg-slate-800 rounded-lg shadow-lg hover:shadow-2xl",
+        className=f"w-full h-full flex flex-col justify-center items-center p-0 bg-slate-800 rounded-lg shadow-lg {classname}",
     )
 
 def timelineNode(title, top):

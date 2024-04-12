@@ -1,3 +1,7 @@
+import os
+import sys
+#setting the path to the root directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.signal_generator import generate_signal, calculate_all_indicators
 from services.risk_manager import get_quantity, place_market_order, get_open_positions, get_current_balance, \
     calculate_total_unrealised_pnl, close_all_trades
@@ -102,6 +106,10 @@ def run_trading_cycle():
         'stoploss_pnl': stoploss_pnl,
         'target_pnl': target_pnl
     }
+if __name__ == "__main__":
+    from oandapyV20.endpoints import transactions
+    request = transactions.TransactionsSinceID(CLIENT_CONFIG.account_id, params={"id": 1})
+    print(CLIENT_CONFIG.client_api.request(request))
 # while True:
 #     try:
 #         # we will trade only if NOT in position
