@@ -4,7 +4,7 @@ from configs.server_conf import logger
 from dash_iconify import DashIconify
 import dash_mantine_components as dmc
 from datetime import datetime as dt
-from data.store import full_trade_df, trades_df, metrics_df, results_df, transactions_df
+from data.store import transactions_df
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from services.risk_manager import get_current_balance
 def dmcTableComponent(id):
@@ -16,17 +16,7 @@ def dmcTableComponent(id):
         "maxBlocksInCache": 1,
         "rowSelection": "multiple",
     }
-    if id == "analysis-page-infinite-grid-full-trades":
-        columnDefs = [{"field": col} for col in full_trade_df.columns]
-    elif id == "infinite-grid-trade":
-        columnDefs = [{"field": col} for col in trades_df.columns]
-    elif id == "analysis-page-infinite-grid-metrics":
-        columnDefs = [{"field": col} for col in metrics_df.columns]
-        rowModelType = "clientSide"
-        dashGridOptions = {}
-    elif id == "analysis-page-infinite-grid-results":
-        columnDefs = [{"field": col} for col in results_df.columns]
-    elif id == "infinite-grid-transactions":
+    if id == "infinite-grid-transactions":
         columnDefs = [{"field": col} for col in transactions_df.columns]
         rowModelType = "clientSide"
         dashGridOptions = {}
@@ -42,8 +32,6 @@ def dmcTableComponent(id):
         "rowModelType": rowModelType,
         "dashGridOptions": dashGridOptions,
     }
-    if id == "analysis-page-infinite-grid-metrics":
-        AgGridConfig["rowData"] = metrics_df.to_dict("records")
     if id == "infinite-grid-transactions":
         AgGridConfig["rowData"] = transactions_df.to_dict("records")
         return html.Div(
@@ -142,39 +130,39 @@ def benchmarkStatsTableComponent():
                                                             className="font-semibold select-none",
                                                         ),
                                                         # get the annual return from the metrics_df, column name is 'Annual Return', row index is "Portfolio Returns"
-                                                        html.Td(
-                                                            metrics_df.loc[
-                                                                "Portfolio Returns",
-                                                                "Annual Return",
-                                                            ].round(3),
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Annual Return",
-                                                                ].round(3)
-                                                                > metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Annual Return",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
-                                                        html.Td(
-                                                            f'{metrics_df.loc["Portfolio Strategy", "Annual Return"].round(3)} {format_percentage_difference("Annual Return")}',
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Annual Return",
-                                                                ].round(3)
-                                                                < metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Annual Return",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
+                                                        # html.Td(
+                                                        #     metrics_df.loc[
+                                                        #         "Portfolio Returns",
+                                                        #         "Annual Return",
+                                                        #     ].round(3),
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Annual Return",
+                                                        #         ].round(3)
+                                                        #         > metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Annual Return",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
+                                                        # html.Td(
+                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Annual Return"].round(3)} {format_percentage_difference("Annual Return")}',
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Annual Return",
+                                                        #         ].round(3)
+                                                        #         < metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Annual Return",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
                                                     ],
                                                     className="border-b border-slate-700",
                                                 ),
@@ -186,39 +174,39 @@ def benchmarkStatsTableComponent():
                                                             className="font-semibold select-none",
                                                         ),
                                                         # get the annual std from the metrics_df, column name is 'Annual Std', row index is "Portfolio Returns"
-                                                        html.Td(
-                                                            metrics_df.loc[
-                                                                "Portfolio Returns",
-                                                                "Annual Std",
-                                                            ].round(3),
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Annual Std",
-                                                                ].round(3)
-                                                                > metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Annual Std",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
-                                                        html.Td(
-                                                            f'{metrics_df.loc["Portfolio Strategy", "Annual Std"].round(3)} {format_percentage_difference("Annual Std")}',
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Annual Std",
-                                                                ].round(3)
-                                                                < metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Annual Std",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
+                                                        # html.Td(
+                                                        #     metrics_df.loc[
+                                                        #         "Portfolio Returns",
+                                                        #         "Annual Std",
+                                                        #     ].round(3),
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Annual Std",
+                                                        #         ].round(3)
+                                                        #         > metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Annual Std",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
+                                                        # html.Td(
+                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Annual Std"].round(3)} {format_percentage_difference("Annual Std")}',
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Annual Std",
+                                                        #         ].round(3)
+                                                        #         < metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Annual Std",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
                                                     ],
                                                     className="border-b border-slate-700",
                                                 ),
@@ -230,39 +218,39 @@ def benchmarkStatsTableComponent():
                                                             className="font-semibold select-none",
                                                         ),
                                                         # get the sharpe ratio from the metrics_df, column name is 'Sharpe Ratio', row index is "Portfolio Strategy"
-                                                        html.Td(
-                                                            metrics_df.loc[
-                                                                "Portfolio Returns",
-                                                                "Sharpe Ratio",
-                                                            ].round(3),
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Sharpe Ratio",
-                                                                ].round(3)
-                                                                > metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Sharpe Ratio",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
-                                                        html.Td(
-                                                            f'{metrics_df.loc["Portfolio Strategy", "Sharpe Ratio"].round(3)} {format_percentage_difference("Sharpe Ratio")}',
-                                                            className=(
-                                                                "text-emerald-500"
-                                                                if metrics_df.loc[
-                                                                    "Portfolio Returns",
-                                                                    "Sharpe Ratio",
-                                                                ].round(3)
-                                                                < metrics_df.loc[
-                                                                    "Portfolio Strategy",
-                                                                    "Sharpe Ratio",
-                                                                ].round(3)
-                                                                else "text-rose-500"
-                                                            ),
-                                                        ),
+                                                        # html.Td(
+                                                        #     metrics_df.loc[
+                                                        #         "Portfolio Returns",
+                                                        #         "Sharpe Ratio",
+                                                        #     ].round(3),
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Sharpe Ratio",
+                                                        #         ].round(3)
+                                                        #         > metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Sharpe Ratio",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
+                                                        # html.Td(
+                                                        #     f'{metrics_df.loc["Portfolio Strategy", "Sharpe Ratio"].round(3)} {format_percentage_difference("Sharpe Ratio")}',
+                                                        #     className=(
+                                                        #         "text-emerald-500"
+                                                        #         if metrics_df.loc[
+                                                        #             "Portfolio Returns",
+                                                        #             "Sharpe Ratio",
+                                                        #         ].round(3)
+                                                        #         < metrics_df.loc[
+                                                        #             "Portfolio Strategy",
+                                                        #             "Sharpe Ratio",
+                                                        #         ].round(3)
+                                                        #         else "text-rose-500"
+                                                        #     ),
+                                                        # ),
                                                     ],
                                                 ),
                                             ],
@@ -732,29 +720,29 @@ def backendTerminalMonitorTableComponent():
         ],
         className="w-full h-full justify-center items-center p-1",
     )
-def format_percentage_difference(column_name):
-    # Ensure that the DataFrame contains the column and the necessary index labels
-    if (
-        column_name in metrics_df.columns
-        and "Portfolio Returns" in metrics_df.index
-        and "Portfolio Strategy" in metrics_df.index
-    ):
+# def format_percentage_difference(column_name):
+#     # Ensure that the DataFrame contains the column and the necessary index labels
+#     if (
+#         column_name in metrics_df.columns
+#         and "Portfolio Returns" in metrics_df.index
+#         and "Portfolio Strategy" in metrics_df.index
+#     ):
 
-        # Fetch the values for "Portfolio Returns" and "Portfolio Strategy"
-        portfolio_returns_value = metrics_df.loc["Portfolio Returns", column_name]
-        portfolio_strategy_value = metrics_df.loc["Portfolio Strategy", column_name]
+#         # Fetch the values for "Portfolio Returns" and "Portfolio Strategy"
+#         portfolio_returns_value = metrics_df.loc["Portfolio Returns", column_name]
+#         portfolio_strategy_value = metrics_df.loc["Portfolio Strategy", column_name]
 
-        # Calculate the percentage difference
-        if portfolio_returns_value != 0:
-            percentage_diff = (
-                portfolio_strategy_value - portfolio_returns_value
-            ) / abs(portfolio_returns_value)
-            # Format the string with a plus or minus sign based on the difference
-            return (
-                f"({'+' if percentage_diff >= 0 else '-' }{abs(percentage_diff):.2%})"
-            )
-        else:
-            # Handle the case where the denominator is zero
-            return "(N/A)"  # or some other placeholder text
-    else:
-        raise ValueError("Invalid column name or missing index labels in DataFrame.")
+#         # Calculate the percentage difference
+#         if portfolio_returns_value != 0:
+#             percentage_diff = (
+#                 portfolio_strategy_value - portfolio_returns_value
+#             ) / abs(portfolio_returns_value)
+#             # Format the string with a plus or minus sign based on the difference
+#             return (
+#                 f"({'+' if percentage_diff >= 0 else '-' }{abs(percentage_diff):.2%})"
+#             )
+#         else:
+#             # Handle the case where the denominator is zero
+#             return "(N/A)"  # or some other placeholder text
+#     else:
+#         raise ValueError("Invalid column name or missing index labels in DataFrame.")

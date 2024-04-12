@@ -1,34 +1,16 @@
-from dash import Dash, html, dcc, Output, Input, ctx, State
+from dash import html, dcc, Output, Input, ctx, State
 from dash.dependencies import ClientsideFunction
 from dash.exceptions import PreventUpdate
-import dash_ag_grid as dag
-import plotly.express as px
-import numpy as np
-import pandas as pd
-import dash_bootstrap_components as dbc
-import dash_mantine_components as dmc
-import dash_tvlwc
-import yfinance as yf
-import random
-import logging
-import dash_echarts as dec
-from services.strategy_utils import run_strategy, fetch_data
-from services.signal_generator import fetch_candlestick_data
-from components.common.wrappers import paperWrapperComponent
-from datetime import datetime as dt
-import plotly.graph_objs as go
-from textwrap import dedent
+from services.signal_generator import fetch_data
 from configs.server_conf import logger, app
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from pages.landing_page import landingPage
 from pages.dashboard_page import dashboardPage
-from pages.analysis_page import analysisInitialPage, analysisDetailPage
-from components.tables import dmcTableComponent
-from components.figures import visualisationFiguresGrid
-from data.store import trades_df, full_trade_df, transactions_df
+# from pages.analysis_page import analysisInitialPage, analysisDetailPage
+from components.figures import create_line_chart
+from data.store import transactions_df, benchmark_returns_list, strategy_returns_list, indicators_lists_dict, list_dequeue_and_append
 from services.main import run_trading_cycle, close_all_trades
 from services.risk_manager import fetch_trade_markers, fetch_recent_transactions_df, get_pending_trades_num
-
 app.clientside_callback(
     ClientsideFunction(
         namespace="clientside", function_name="transitionToDashboardPage"
@@ -84,7 +66,7 @@ def update_landing_page_candlestick(
     Returns:
         list[list[dict]]: updated series data.
     """
-    return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)[0]]
+    return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
 
 @app.callback(
     Output("dashboard-page-candlestick-chart", "seriesMarkers"),
@@ -92,6 +74,8 @@ def update_landing_page_candlestick(
     Output("infinite-grid-transactions", "rowData"),
     Output("primary-stats-table-pending-trades","children"),
     Output("returns-comparison-line-fig", "figure"),
+    Output("hurst-line-fig", "figure"),
+    Output("momentums-line-fig", "figure"),
     # Output("landing-page-candlestick-chart-store", "data"),
     # Input("landing-page-candlestick-chart", "seriesData"),
     Input("dashboard-page-candlestick-chart-interval", "n_intervals"),
@@ -113,168 +97,38 @@ def update_dashboard_primary_page(*args) -> list[list[dict]]:
     Returns:
         list[list[dict]]: updated series data.
     """
-    # data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
-    # logger.info(f"Fetching {TRADE_CONFIG.lookback_count} data for {TRADE_CONFIG.instrument}, data size {len(data)}")
-    # markers = fetch_trade_markers()
-    # logger.info(markers)
     global transactions_df
     transactions_df = fetch_recent_transactions_df()
     pending_trades_num = get_pending_trades_num()
-    markers =[ fetch_trade_markers(last_transaction_id=800)]
-    candlestick_data, benchmark_data, strategy_returns_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
-    benchmark_data = pd.DataFrame(benchmark_data)
-    strategy_returns_data = pd.DataFrame(strategy_returns_data)
-    # benchmark_data.reset_index(inplace=True)
-    # strategy_returns_data.reset_index(inplace=True)
-    # ensure float values
-    benchmark_data["value"] = benchmark_data["value"].astype(float)
-    strategy_returns_data["value"] = strategy_returns_data["value"].astype(float)
-    returns_comparison_line_fig = go.Figure()
-    returns_comparison_line_fig.add_trace(
-        go.Scatter(
-            x=benchmark_data['time'],
-            y=benchmark_data['value'],
-            mode="lines",
-            name="Benchmark",
-            line=dict(color="rgb(16, 185, 129)"),
-        )
+    markers = fetch_trade_markers(last_transaction_id=800)
+    candlestick_data, indicators = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, include_indicators=True)
+    last_point = candlestick_data[-1]
+    global indicators_lists_dict, benchmark_returns_list, strategy_returns_list
+    list_dequeue_and_append(benchmark_returns_list, TRADE_CONFIG.lookback_count, {"time": last_point["time"], "value": float(last_point["close"])})
+    list_dequeue_and_append(strategy_returns_list, TRADE_CONFIG.lookback_count, {"time": last_point["time"], "value": float(CLIENT_CONFIG.current_balance / CLIENT_CONFIG.initial_balance)})
+    for _i, key in enumerate(indicators_lists_dict):
+        list_dequeue_and_append(indicators_lists_dict[key], TRADE_CONFIG.lookback_count, {"time": last_point["time"], "value": float(indicators[_i])})
+    returns_comparison_line_fig = create_line_chart(
+        [benchmark_returns_list, strategy_returns_list],
+        "Returns",
+        ["rgb(16, 185, 129)", "rgb(244, 63, 94)"],
+        ["Benchmark", "Strategy"],
     )
-    returns_comparison_line_fig.add_trace(
-        go.Scatter(
-            x=strategy_returns_data['time'],
-            y=strategy_returns_data['value'],
-            mode="lines",
-            name="Strategy",
-            line=dict(color="rgb(244, 63, 94)"),
-        )
+    # hurst figure
+    hurst_fig = create_line_chart(
+        [indicators_lists_dict["hurst"]],
+        "Hurst Exponent",
+        ["rgb(16, 185, 129)"],
+        ["Hurst Exponent"],
     )
-    returns_comparison_line_fig.update_layout(
-        autosize=True,
-        margin=dict(l=0, r=20, t=10, b=0),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgb(100,116,139)"),
-        xaxis={"showticklabels": False, "title": "Date", "showgrid": False},
-        yaxis={
-            "title": "Returns",
-            "showgrid": False,
-            "zerolinecolor": "rgb(148, 163, 184)",
-        },
-        showlegend=False,
+    # momentums figure
+    momentums_fig = create_line_chart(
+        [indicators_lists_dict["short_term_momentum"], indicators_lists_dict["long_term_momentum"]],
+        "Momentum",
+        ["rgb(16, 185, 129)", "rgb(244, 63, 94)"],
+        ["Short-term Momentum", "Long-term Momentum"],
     )
-    
-    # print(candlestick_data)
-    # print(benchmark_data)
-    # print(strategy_returns_data)
-    seriesData = [candlestick_data]
-    return markers, seriesData, transactions_df.to_dict("records"), str(pending_trades_num), returns_comparison_line_fig
-
-@app.callback(
-    Output("analysis-page-inner-container", "children"),
-    Input("analysis-page-title-interval", "n_intervals"),
-)
-def erase_title_dom_and_replace(
-    nIntervals: int,
-) -> html.Div:
-    """Erase the title and replace with the analysis page layout.
-
-    Args:
-        nIntervals (int): number of intervals.
-
-    Returns:
-        html.Div: analysis page layout.
-    """
-    if nIntervals == 0 or nIntervals is None:
-        raise PreventUpdate
-    #logger.info("Erase title and replace with analysis page layout.")
-    return analysisDetailPage()
-
-
-@app.callback(
-    Output("analysis-page-infinite-grid-full-trades-container", "children"),
-    Input("analysis-page-infinite-grid-full-trades-btn", "n_clicks"),
-    prevent_initial_call=True,
-)
-def show_result_full_trades(nClicks: int) -> dash_tvlwc.Tvlwc:
-    if nClicks is None:
-        raise PreventUpdate
-    return dmcTableComponent(
-        "analysis-page-infinite-grid-full-trades"
-    )  # tvwlcComponent()
-
-
-@app.callback(
-    Output("analysis-page-infinite-grid-metrics-container", "children"),
-    Input("analysis-page-infinite-grid-metrics-btn", "n_clicks"),
-    prevent_initial_call=True,
-)
-def show_result_metrics(nClicks: int) -> dash_tvlwc.Tvlwc:
-    if nClicks is None:
-        raise PreventUpdate
-    return dmcTableComponent("analysis-page-infinite-grid-metrics")  # tvwlcComponent()
-
-
-@app.callback(
-    Output("analysis-page-infinite-grid-full-trades-infinite-output", "children"),
-    Input("analysis-page-infinite-grid-full-trades", "selectedRows"),
-)
-def display_selected_full_trades(selectedRows):
-    if selectedRows:
-        return [f"You selected id {s['id']} and name {s['name']}" for s in selectedRows]
-    raise PreventUpdate
-
-
-@app.callback(
-    Output("analysis-page-infinite-grid-full-trades", "getRowsResponse"),
-    Input("analysis-page-infinite-grid-full-trades", "getRowsRequest"),
-)
-def infinite_scroll_full_trades(request):
-    if request is None:
-        raise PreventUpdate
-    # instead of original ascending order, we use descending order
-    total_rows = full_trade_df.shape[0]
-    partial = full_trade_df.iloc[
-        total_rows - request["endRow"] : total_rows - request["startRow"]
-    ][::-1]
-    return {"rowData": partial.to_dict("records"), "rowCount": len(full_trade_df.index)}
-
-
-@app.callback(
-    Output("infinite-output-trade", "children"),
-    Input("infinite-grid-trade", "selectedRows"),
-)
-def display_selected_trade(selectedRows):
-    if selectedRows:
-        return [f"You selected id {s['id']} and name {s['name']}" for s in selectedRows]
-    raise PreventUpdate
-
-
-@app.callback(
-    Output("infinite-grid-trade", "getRowsResponse"),
-    Input("infinite-grid-trade", "getRowsRequest"),
-)
-def infinite_scroll_trade(request):
-    if request is None:
-        raise PreventUpdate
-    partial = trades_df.iloc[request["startRow"] : request["endRow"]]
-    return {"rowData": partial.to_dict("records"), "rowCount": len(trades_df.index)}
-
-
-
-
-
-
-
-@app.callback(
-    Output("analysis-page-visualisation-container", "children"),
-    Input("analysis-page-visualisation-btn", "n_clicks"),
-)
-def show_visualisation_grid(nClicks: int) -> list[html.Div]:
-    if nClicks is None:
-        raise PreventUpdate
-    return visualisationFiguresGrid()
-
-
+    return [markers], [candlestick_data], transactions_df.to_dict("records"), str(pending_trades_num), returns_comparison_line_fig, hurst_fig, momentums_fig
 
 @app.callback(
     Output("landing-page-container", "className"),
@@ -315,53 +169,7 @@ def trigger_dashboardPage_transition(n_clicks: int, pathname: str, classname: st
     Input("url", "pathname"),
 )
 def display_page(pathname: str):
-    if pathname == "/dashboard":
-        #logger.info("Switch to dashboard page.")
-        return dashboardPage()
-    if pathname == "/analysis":
-        # deal with delay by client side js
-        # ////time.sleep(0.2)  #! hack way to wait for the transition to finish
-        #logger.info("Switch to analysis page.")
-        return analysisInitialPage()
-    #logger.info(f"Switch to landing page for {pathname}.")
-    return landingPage()
-
-# Define the callback to handle form submission
-"""@app.callback(
-    Output("output-container", "children"),
-    [Input("submit-button", "n_clicks")],
-    [
-        State("stocks-input", "value"),
-        State("start-date-picker", "value"),
-        State("end-date-picker", "value"),
-        State("short-window-input", "value"),
-        State("long-window-input", "value"),
-        State("hurst-window-input", "value"),
-    ],
-)
-def update_output(
-    n_clicks, stocks, start_date, end_date, short_window, long_window, hurst_window
-):
-    global results_df, metrics_df
-    if n_clicks > 0:
-        # Process the stocks input into a list
-        stocks_list = stocks.split(",")
-        # Convert the date strings to actual dates (if necessary)
-        start_date_obj = dt.strptime(start_date, "%Y-%m-%d")
-        end_date_obj = dt.strptime(end_date, "%Y-%m-%d")
-        # Run the strategy function
-        results_df, metrics_df = run_strategy(
-            stocks_list,
-            start_date_obj,
-            end_date_obj,
-            short_window,
-            long_window,
-            hurst_window,
-        )
-        raise PreventUpdate
-    raise PreventUpdate"""
-
-
+    return dashboardPage() if pathname == "/dashboard" else landingPage()
 
 @app.callback(
     Output("dashboard-page-drawer", "opened"),

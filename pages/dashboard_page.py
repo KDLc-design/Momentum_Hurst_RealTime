@@ -1,27 +1,13 @@
-from dash import Dash, html, dcc, callback, Output, Input, ctx, State
-from dash.dependencies import ClientsideFunction
-from dash.exceptions import PreventUpdate
-import dash_ag_grid as dag
-import plotly.express as px
-import numpy as np
-import pandas as pd
-import dash_bootstrap_components as dbc
+from dash import html, dcc
 import dash_mantine_components as dmc
-import dash_tvlwc
-import yfinance as yf
-import random
-from configs.server_conf import logger
-import dash_echarts as dec
-from services.strategy_utils import run_strategy, fetch_data
+from dash_tvlwc import Tvlwc
+from services.signal_generator import fetch_data
 from services.risk_manager import fetch_trade_markers
 from components.common.wrappers import paperWrapperComponent
 from components.tables import *
-from datetime import datetime as dt
-import plotly.graph_objs as go
-from textwrap import dedent
 from dash_iconify import DashIconify
-from data.store import results_df, trades_df, full_trade_df, strategy_returns
-
+from data.store import strategy_returns_list, benchmark_returns_list, indicators_lists_dict
+from components.figures import create_line_chart
 def drawer():
     return dmc.Drawer(
         [
@@ -66,207 +52,28 @@ def drawer():
 
 
 def dashboardPage():
-    # Assuming 'results_df' is your DataFrame and has been defined previously.
-
-    # Extract the data for plotting to ensure alignment
-    dates = results_df.iloc[::200]["Date"]
-    cumulative_portfolio_returns = results_df.iloc[::200][
-        "cumulative_portfolio_returns"
-    ]
-    cumulative_portfolio_strategy = results_df.iloc[::200][
-        "cumulative_portfolio_strategy"
-    ]
-
-    # Define the offset for adjacent bars within the same group
-    offset = 0.5 * (
-        dates.shape[0] - 1
-    )  # Adjust this value as needed for your visual preference
-
-    # Generate x-coordinates for the bars
-    x_values = np.arange(len(dates))
-
-    # Create the base figure
-    cumReturnBarFig = go.Figure()
-
-    # Add the first bar trace for cumulative_portfolio_returns
-    cumReturnBarFig.add_trace(
-        go.Bar(
-            x=x_values - offset,
-            y=cumulative_portfolio_returns,
-            name="Benchmark",
-            marker_color="rgb(16, 185, 129)",
-        )
-    )
-
-    # Add the second bar trace for cumulative_portfolio_strategy
-    cumReturnBarFig.add_trace(
-        go.Bar(
-            x=x_values + offset,
-            y=cumulative_portfolio_strategy,
-            name="Strategy",
-            marker_color="rgb(244, 63, 94)",
-        )
-    )
-
-    # Update the layout to group bars and set the x-axis with date labels
-    cumReturnBarFig.update_layout(
-        autosize=True,
-        margin=dict(l=0, r=20, t=10, b=0),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgb(100,116,139)"),
-        barmode="overlay",
-        xaxis={"showticklabels": False, "title": "Date"},
-        yaxis={
-            "title": "Cumulative Returns",
-            "gridcolor": "rgb(148, 163, 184)",
-            "zerolinecolor": "rgb(148, 163, 184)",
-        },
-        showlegend=False,
-    )
-
-    drawDownFig = go.Figure()
-    drawDownFig.add_trace(
-        go.Scatter(
-            x=results_df["Date"],
-            y=results_df["cum_max"],
-            mode="lines",
-            name="cum_max",
-            line=dict(color="rgb(16, 185, 129)"),
-        )
-    )
-    drawDownFig.add_trace(
-        go.Scatter(
-            x=results_df["Date"],
-            y=results_df["cumulative_portfolio_strategy"],
-            mode="lines",
-            name="Return",
-            line=dict(color="rgb(244, 63, 94)"),
-        )
-    )
-
-    drawDownFig.update_layout(
-        autosize=True,
-        margin=dict(l=0, r=20, t=10, b=0),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgb(100,116,139)"),
-        xaxis={"showticklabels": False, "title": "Date", "showgrid": False},
-        yaxis={
-            "title": "Drawdown",
-            "showgrid": False,
-            "zerolinecolor": "rgb(148, 163, 184)",
-        },
-        showlegend=False,
-    )
-    # rolling sharpe ratio
-    rollingSharpeFig = go.Figure()
-    results_df["rolling_sharpe_strategy"] = (
-        results_df["portfolio_strategy"].rolling(window=21).mean()
-        / results_df["portfolio_strategy"].rolling(window=21).std()
-    )
-    results_df["rolling_sharpe_returns"] = (
-        results_df["portfolio_returns"].rolling(window=21).mean()
-        / results_df["portfolio_returns"].rolling(window=21).std()
-    )
-    rollingSharpeFig.add_trace(
-        go.Scatter(
-            x=results_df["Date"],
-            y=results_df["rolling_sharpe_returns"],
-            mode="lines",
-            name="Benchmark",
-            line=dict(color="rgb(16, 185, 129)"),
-        )
-    )
-    rollingSharpeFig.add_trace(
-        go.Scatter(
-            x=results_df["Date"],
-            y=results_df["rolling_sharpe_strategy"],
-            mode="lines",
-            name="Strategy",
-            line=dict(color="rgb(244, 63, 94)"),
-        )
-    )
-    rollingSharpeFig.update_layout(
-        autosize=True,
-        margin=dict(l=0, r=20, t=10, b=0),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgb(100,116,139)"),
-        xaxis={
-            "showticklabels": False,
-            "title": "Date",
-            "showgrid": False,
-        },
-        yaxis={
-            "title": "Rolling Sharpe Ratio",
-            "showgrid": False,
-            "zerolinecolor": "rgb(148, 163, 184)",
-        },
-        showlegend=False,
-    )
-    candlestick_data, benchmark_data, strategy_returns_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
-    benchmark_data = pd.DataFrame(benchmark_data)
-    strategy_returns_data = pd.DataFrame(strategy_returns_data)
-    # benchmark_data.reset_index(inplace=True)
-    # strategy_returns_data.reset_index(inplace=True)
-    # ensure float values
-    benchmark_data["value"] = benchmark_data["value"].astype(float)
-    strategy_returns_data["value"] = strategy_returns_data["value"].astype(float)
-    returns_comparison_line_fig = go.Figure()
-    returns_comparison_line_fig.add_trace(
-        go.Scatter(
-            x=benchmark_data['time'],
-            y=benchmark_data['value'],
-            mode="lines",
-            name="Benchmark",
-            line=dict(color="rgb(16, 185, 129)"),
-        )
-    )
-    returns_comparison_line_fig.add_trace(
-        go.Scatter(
-            x=strategy_returns_data['time'],
-            y=strategy_returns_data['value'],
-            mode="lines",
-            name="Strategy",
-            line=dict(color="rgb(244, 63, 94)"),
-        )
-    )
-    returns_comparison_line_fig.update_layout(
-        autosize=True,
-        margin=dict(l=0, r=20, t=10, b=0),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgb(100,116,139)"),
-        xaxis={"showticklabels": False, "title": "Date", "showgrid": False},
-        yaxis={
-            "title": "Returns",
-            "showgrid": False,
-            "zerolinecolor": "rgb(148, 163, 184)",
-        },
-        showlegend=False,
-    )
-    
-    stock_full_trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
-    # filter the row which has Stock='AAPL'
-    # trade_df = full_trade_df[full_trade_df["Stock"] == "AAPL"]
-    # Loop through the DataFrame and create markers
+    candlestick_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
     markers = fetch_trade_markers(last_transaction_id=800)
-    shortTermMomentumRecords = []
-    longTermMomentumRecords = []
-    HurstRecords = []
-    RSIRecords = []
-    for _, row in stock_full_trade_df.iterrows():
-        date = row["Date"].split(" ")[0]
-        shortTermMomentumRecords.append(
-            {"time": date, "value": row["ShortTermMomentum"]}
-        )
-        longTermMomentumRecords.append({"time": date, "value": row["LongTermMomentum"]})
-        HurstRecords.append({"time": date, "value": row["Hurst"]})
-        # RSIRecords.append({'time':date, 'value':row['RSI']})
-    #logger.info(ticker_records[:3])
-    #logger.info(shortTermMomentumRecords[:3])
-    #logger.info(markers[:3])
+    returns_comparison_line_fig = create_line_chart(
+        [benchmark_returns_list, strategy_returns_list],
+        "Returns",
+        ["rgb(16, 185, 129)", "rgb(244, 63, 94)"],
+        ["Benchmark", "Strategy"],
+    )
+    # hurst figure
+    hurst_fig = create_line_chart(
+        [indicators_lists_dict["hurst"]],
+        "Hurst Exponent",
+        ["rgb(16, 185, 129)"],
+        ["Hurst Exponent"],
+    )
+    # momentums figure
+    momentums_fig = create_line_chart(
+        [indicators_lists_dict["short_term_momentum"], indicators_lists_dict["long_term_momentum"]],
+        "Momentum",
+        ["rgb(16, 185, 129)", "rgb(244, 63, 94)"],
+        ["Short-term Momentum", "Long-term Momentum"],
+    )
     return html.Div(
         [
             drawer(),
@@ -363,8 +170,8 @@ def dashboardPage():
                     paperWrapperComponent(
                         # visualise 'cumulative_portfolio_returns' and 'cumulative_portfolio_strategy' in a line chart
                         dcc.Graph(
-                            id="cumReturnBar-chart",
-                            figure=cumReturnBarFig,
+                            id="hurst-line-fig",
+                            figure=hurst_fig,
                             responsive=True,
                             config={"displayModeBar": False},
                             style={"width": "100%", "height": "100%"},
@@ -382,12 +189,12 @@ def dashboardPage():
                         n_intervals=0,
                     ),
                     paperWrapperComponent(
-                        dash_tvlwc.Tvlwc(
+                        Tvlwc(
                             id="dashboard-page-candlestick-chart",
                             seriesData=[
                                 candlestick_data,
-                                # benchmark_data,
-                                #strategy_returns_data
+                                # benchmark_returns_df,
+                                #strategy_returns_df
                                 # shortTermMomentumRecords,
                                 # longTermMomentumRecords,
                                 # HurstRecords,
@@ -423,10 +230,11 @@ def dashboardPage():
                                     "fixRightEdge": True,
                                     "timeVisible": True,
                                     "secondsVisible": True,
+                                    "borderVisible":False,
                                 },
                                 "localization": {"locale": "en-SG"},
                             },
-                            width="75dvw",
+                            width="74dvw",
                             height="66dvh",
                         )
                     ),
@@ -438,8 +246,8 @@ def dashboardPage():
                     paperWrapperComponent(
                         # visualise 'cumulative_portfolio_returns' and 'cumulative_portfolio_strategy' in a line chart
                         dcc.Graph(
-                            id="drawdown-chart",
-                            figure=drawDownFig,
+                            id="momentums-line-fig",
+                            figure=momentums_fig,
                             responsive=True,
                             config={"displayModeBar": False},
                             style={"width": "100%", "height": "100%"},

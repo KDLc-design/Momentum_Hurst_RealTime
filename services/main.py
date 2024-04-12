@@ -1,4 +1,4 @@
-from services.signal_generator import generate_signal
+from services.signal_generator import generate_signal, calculate_all_indicators
 from services.risk_manager import get_quantity, place_market_order, get_open_positions, get_current_balance, \
     calculate_total_unrealised_pnl, close_all_trades
 from services.notification import send_email_notification

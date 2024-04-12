@@ -1,6 +1,6 @@
 from dash import html, dcc
 from dash_tvlwc import Tvlwc
-from services.strategy_utils import fetch_data
+from services.signal_generator import fetch_data
 from configs.server_conf import logger
 def landingPage() -> html.Div:
     """Landing page layout.
@@ -8,8 +8,7 @@ def landingPage() -> html.Div:
     Returns:
         html.Div: landing page layout.
     """
-    bufferSymbol = "EUR_USD"
-    candlestickData = fetch_data(bufferSymbol, 200)[0]
+    candlestickData = fetch_data("EUR_USD", 200)
     #logger.info(f"Landing page layout. yfinance data downloaded for {bufferSymbol}. len: {len(candlestickData)}")
     return html.Div(
         [
