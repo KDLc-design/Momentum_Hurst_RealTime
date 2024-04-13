@@ -66,7 +66,7 @@ def calculate_volatility(close_prices, period):
     # Calculate the volatility
     returns = np.diff(close_prices)
     return np.std(returns[-period:])
-def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period, close_prices=None, multi=False, latest_time=None):# Fetch candlestick data
+def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period, close_prices=None, multi=False, latest_time=None, include_bb=False):# Fetch candlestick data
     if not multi:
     # if not none, fetch
         if instrument_name is not None:
@@ -78,6 +78,11 @@ def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_peri
         long_term_momentum_list = [{"time":latest_time,"value":calculate_momentum(close_prices, lt_period)}]
         rsi_list = [{"time":latest_time,"value":calculate_rsi(close_prices, st_period)}]
         volatility_list = [{"time":latest_time,"value":calculate_volatility(close_prices, lt_period)}]
+        #! Special getter for latest generate_signal
+        if include_bb:
+            bb_hband_list, bb_lband_list = generate_bollinger_bands(response, TRADE_CONFIG.bb_window, TRADE_CONFIG.bb_window_dev)
+            bb_within_ub = (close_prices[-1] <= float(bb_hband_list[-1]["value"]))
+            return hurst_list, short_term_momentum_list, long_term_momentum_list, [{"value":bb_within_ub}]
     else:
         if instrument_name is not None:
             response = fetch_candlestick_data(instrument_name, lookback_count * 2)
@@ -91,7 +96,7 @@ def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_peri
         volatility_list = [{"time": times[lookback_count + i] ,"value":calculate_volatility(close_prices[lookback_count + i + 1 - lt_period:lookback_count + i + 1], lt_period)} for i in range(lookback_count)]
     return hurst_list, short_term_momentum_list, long_term_momentum_list, rsi_list, volatility_list
 def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst_period):
-    hurst, short_term_momentum, long_term_momentum, rsi, volatility = (x[0]["value"] for x in calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period))
+    hurst, short_term_momentum, long_term_momentum, bb_within_ub = (x[0]["value"] for x in calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period))
     
     logger.info(f"Hurst Exponent: {hurst:.6f}")
 
@@ -99,7 +104,7 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
 
     logger.info(f"Long-term Momentum: {long_term_momentum:.6f}")
 
-    logger.info(f"RSI: {rsi:.6f}")
+    logger.info(f"BB Signal: {'WITHIN' if bb_within_ub else 'CROSSED'}")
 
     # Check for crossover
     if hurst > 0.8 and short_term_momentum > 0 and long_term_momentum > 0:
@@ -110,9 +115,9 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
         signal = "SELL"
     elif hurst < 0.2 and short_term_momentum > 0 and long_term_momentum > 0:
         signal = "SELL"
-    elif 0.8 >= hurst >= 0.2 and rsi > 70:
+    elif 0.8 >= hurst >= 0.2 and not bb_within_ub:
         signal = "SELL"
-    elif 0.8 >= hurst >= 0.2 and rsi <= 30:
+    elif 0.8 >= hurst >= 0.2 and bb_within_ub:
         signal = "BUY"
     else:
         signal = "HOLD"
