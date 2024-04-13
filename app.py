@@ -58,7 +58,7 @@ def update_landing_page_candlestick(
         list[list[dict]]: updated series data.
     """
     return [fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)]
-
+#import time
 @app.callback(
     Output("dashboard-page-candlestick-chart", "seriesMarkers"),
     Output("dashboard-page-candlestick-chart", "seriesData"),
@@ -82,6 +82,7 @@ def update_dashboard_primary_page(*args) -> list[list[dict]]:
     Returns:
         list[list[dict]]: updated series data.
     """
+    #curr_time  = time.time()
     global transactions_df, indicators_lists_dict, benchmark_returns_list, strategy_returns_list
     transactions_df = fetch_recent_transactions_df()
     pending_trades_num = get_pending_trades_num()
@@ -97,7 +98,8 @@ def update_dashboard_primary_page(*args) -> list[list[dict]]:
             "volatility": [],
         }
         is_initial_fetch = True
-    candlestick_data, indicators_lists = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, include_indicators=True, is_initial_fetch=is_initial_fetch)
+    candlestick_data, indicators_lists, bb_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, include_indicators=True, is_initial_fetch=is_initial_fetch, include_bollinger_bands=True)
+    bb_hband, bb_lband = bb_data
     last_point = candlestick_data[-1]
     # convert to RFC3339
     last_point_time = dt.fromtimestamp(last_point["time"], tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f000Z')
@@ -141,7 +143,8 @@ def update_dashboard_primary_page(*args) -> list[list[dict]]:
         ["rgb(16, 185, 129)"],
         ["Volatility"],
     )
-    return [markers], [candlestick_data], transactions_df.to_dict("records"), str(pending_trades_num), returns_comparison_line_fig, hurst_fig, momentums_fig, rsi_fig, volatility_fig
+    #print("Time taken: ", time.time() - curr_time)
+    return [markers], [candlestick_data, bb_hband, bb_lband], transactions_df.to_dict("records"), str(pending_trades_num), returns_comparison_line_fig, hurst_fig, momentums_fig, rsi_fig, volatility_fig
 
 @app.callback(
     Output("landing-page-container", "className"),

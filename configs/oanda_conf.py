@@ -65,7 +65,7 @@ class ClientConfig:
             self._environment = value
             self._initialize_client_api()
 class TradeConfig:
-    def __init__(self, instrument, lookback_count, st_period, lt_period, hurst_period, risk_factor, risk_reward, time_interval, granularity, inposition):
+    def __init__(self, instrument, lookback_count, st_period, lt_period, hurst_period, risk_factor, risk_reward, time_interval, granularity, inposition, bb_window, bb_window_dev):
         self._instrument = instrument
         self._lookback_count = lookback_count
         self._st_period = st_period
@@ -76,6 +76,8 @@ class TradeConfig:
         self._time_interval = time_interval
         self._granularity = granularity
         self._inposition = inposition
+        self._bb_window = bb_window
+        self._bb_window_dev = bb_window_dev
     @property
     def instrument(self):
         return self._instrument
@@ -115,6 +117,12 @@ class TradeConfig:
     @property
     def granularity(self):
         return self._granularity
+    @property
+    def bb_window(self):
+        return self._bb_window
+    @property
+    def bb_window_dev(self):
+        return self._bb_window_dev
     @instrument.setter
     def instrument(self, value):
         self._instrument = value
@@ -152,7 +160,12 @@ class TradeConfig:
     @inposition.setter
     def inposition(self, value):
         self._inposition = value
-
+    @bb_window.setter
+    def bb_window(self, value):
+        self._bb_window = value
+    @bb_window_dev.setter
+    def bb_window_dev(self, value):
+        self._bb_window_dev = value
 CLIENT_CONFIG = ClientConfig(access_token="9c7349b9a9bd3d17409758cb7e29e53f-7fcbdfe7bc0636788aa51f7e4a95601f",
                                 account_id="101-003-28600525-001",
                                 environment="practice")
@@ -164,7 +177,9 @@ TRADE_CONFIG = TradeConfig(instrument='EUR_USD',
                             risk_reward=0.75,
                             time_interval=1 * 60,
                             granularity="S5",
-                            inposition=False)
+                            inposition=False,
+                            bb_window=20,
+                            bb_window_dev=0.8)
 
 
 # Client specific configs

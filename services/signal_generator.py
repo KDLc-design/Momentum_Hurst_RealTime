@@ -10,6 +10,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from configs.oanda_conf import CLIENT_CONFIG, TRADE_CONFIG
 from configs.server_conf import logger
 from datetime import datetime as dt, timezone
+from ta.volatility import BollingerBands
+import pandas as pd
 def fetch_candlestick_data(instrument_name, lookback_count, granularity='S5', price='M'):
     # Initialize the Oanda API client
 
@@ -64,7 +66,6 @@ def calculate_volatility(close_prices, period):
     # Calculate the volatility
     returns = np.diff(close_prices)
     return np.std(returns[-period:])
-
 def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period, close_prices=None, multi=False, latest_time=None):# Fetch candlestick data
     if not multi:
     # if not none, fetch
@@ -117,8 +118,8 @@ def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst
         signal = "HOLD"
     return signal
 #generate_signal("EUR_USD", 200, 5, 20, 100)
-def fetch_data(instrument_name, lookback_count, granularity='S5', price='M', include_indicators=False, is_initial_fetch=False):
-    resp = fetch_candlestick_data(instrument_name, lookback_count, granularity, price)['candles']
+def fetch_data(instrument_name, lookback_count, granularity='S5', price='M', include_indicators=False, is_initial_fetch=False, include_bollinger_bands=False):
+    resp = fetch_candlestick_data(instrument_name, lookback_count + TRADE_CONFIG.bb_window, granularity, price)['candles']
     # resp = list[{'complete': True, 'volume': 2, 'time': '', 'mid': {'o': '', 'h': '', 'l': '', 'c': ''}}]
     # convert to list[{'time':'', open:'', high:'', low:'', close:''}]
     resp = [{'time': x['time'], 'open': x['mid']['o'], 'high': x['mid']['h'], 'low': x['mid']['l'], 'close': x['mid']['c']} for x in resp]
@@ -132,7 +133,22 @@ def fetch_data(instrument_name, lookback_count, granularity='S5', price='M', inc
             indicators = calculate_all_indicators(instrument_name, lookback_count, TRADE_CONFIG.st_period, TRADE_CONFIG.lt_period, TRADE_CONFIG.hurst_period, multi=True)
         else:
             indicators = calculate_all_indicators(None,None,TRADE_CONFIG.st_period,TRADE_CONFIG.lt_period,TRADE_CONFIG.hurst_period,close_prices=[float(x['close']) for x in candlestick_data], latest_time=latest_time)
-        return candlestick_data, indicators
-    return candlestick_data
+        if include_bollinger_bands:
+            return candlestick_data[TRADE_CONFIG.bb_window:], indicators, generate_bollinger_bands(candlestick_data, TRADE_CONFIG.bb_window, TRADE_CONFIG.bb_window_dev)
+        return candlestick_data[TRADE_CONFIG.bb_window:], indicators
+    if include_bollinger_bands:
+        return candlestick_data[TRADE_CONFIG.bb_window:], generate_bollinger_bands(candlestick_data, TRADE_CONFIG.bb_window, TRADE_CONFIG.bb_window_dev)
+    return candlestick_data[TRADE_CONFIG.bb_window:]
+def generate_bollinger_bands(candlestick_data, period=20, window_dev=0.8):
+    # convert to pd.Series
+    candlestick_data_df = pd.DataFrame(candlestick_data)[['time', 'close']]
+    BB = BollingerBands(candlestick_data_df['close'], window=period, window_dev=window_dev)
+    candlestick_data_df['bb_bbh'] = BB.bollinger_hband()
+    candlestick_data_df['bb_bbl'] = BB.bollinger_lband()
+    candlestick_data_df.dropna(inplace=True)
+    # convert to list of dictionaries separately
+    bb_hband_list = [{'time': x['time'], 'value': x['bb_bbh']} for x in candlestick_data_df.to_dict('records')]
+    bb_lband_list = [{'time': x['time'], 'value': x['bb_bbl']} for x in candlestick_data_df.to_dict('records')]
+    return bb_hband_list, bb_lband_list
 if __name__ == "__main__":
-    print(fetch_candlestick_data("EUR_USD", 200))
+    print(fetch_data("EUR_USD", 200,include_bollinger_bands=True))

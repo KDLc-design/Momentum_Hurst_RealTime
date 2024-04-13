@@ -87,7 +87,8 @@ def bottomDrawer():
         },
     )
 def dashboardPage():
-    candlestick_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count)
+    candlestick_data, bb_data = fetch_data(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, include_bollinger_bands=True)
+    bb_hband, bb_lband = bb_data
     markers = fetch_trade_markers(last_transaction_id=800)
     returns_comparison_line_fig = create_line_chart(
         [benchmark_returns_list, strategy_returns_list],
@@ -293,9 +294,19 @@ def dashboardPage():
                             id="dashboard-page-candlestick-chart",
                             seriesData=[
                                 candlestick_data,
+                                bb_hband,
+                                bb_lband
+                            ],
+                            seriesOptions=[
+                                # color
+                                {},
+                                {"lineWidth": 1, "color": "#22c55e"},
+                                {"lineWidth": 1, "color": "#ef4444"},
                             ],
                             seriesTypes=[
                                 "candlestick",
+                                "line",
+                                "line"
                             ],
                             seriesMarkers=[markers],
                             chartOptions={
