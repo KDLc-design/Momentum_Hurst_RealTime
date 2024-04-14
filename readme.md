@@ -24,6 +24,7 @@ Here's a high-level overview of the directory structure:
 ├── components    # Components used in Dash app.
 |   └── common        # Skeleton components used across components
 ├── configs       # Configuration files and constants for app & Oanda.
+├── data          # Global data storage.
 ├── pages         # Pages to be switched for different URLs.
 ├── services      # Service modules for handling data retrieval & processing.
 └── app.py        # The main entry point of the Dash application.
