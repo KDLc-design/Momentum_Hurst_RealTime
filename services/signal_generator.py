@@ -80,7 +80,7 @@ def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_peri
         volatility_list = [{"time":latest_time,"value":calculate_volatility(close_prices, lt_period)}]
         #! Special getter for latest generate_signal
         if include_bb:
-            bb_hband_list, bb_lband_list = generate_bollinger_bands(response, TRADE_CONFIG.bb_window, TRADE_CONFIG.bb_window_dev)
+            bb_hband_list, bb_lband_list = generate_bollinger_bands( [{'time': x['time'], 'open': x['mid']['o'], 'high': x['mid']['h'], 'low': x['mid']['l'], 'close': x['mid']['c']} for x in response['candles']], TRADE_CONFIG.bb_window, TRADE_CONFIG.bb_window_dev)
             bb_within_ub = (close_prices[-1] <= float(bb_hband_list[-1]["value"]))
             return hurst_list, short_term_momentum_list, long_term_momentum_list, [{"value":bb_within_ub}]
     else:
@@ -96,7 +96,7 @@ def calculate_all_indicators(instrument_name, lookback_count, st_period, lt_peri
         volatility_list = [{"time": times[lookback_count + i] ,"value":calculate_volatility(close_prices[lookback_count + i + 1 - lt_period:lookback_count + i + 1], lt_period)} for i in range(lookback_count)]
     return hurst_list, short_term_momentum_list, long_term_momentum_list, rsi_list, volatility_list
 def generate_signal(instrument_name, lookback_count, st_period, lt_period, hurst_period):
-    hurst, short_term_momentum, long_term_momentum, bb_within_ub = (x[0]["value"] for x in calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period))
+    hurst, short_term_momentum, long_term_momentum, bb_within_ub = (x[0]["value"] for x in calculate_all_indicators(instrument_name, lookback_count, st_period, lt_period, hurst_period, include_bb=True))
     
     logger.info(f"Hurst Exponent: {hurst:.6f}")
 

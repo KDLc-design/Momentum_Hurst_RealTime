@@ -61,44 +61,44 @@ def update_trade_status():
 def run_trading_cycle():
     global opening_balance, stoploss_pnl, target_pnl, last_print_time
     
-    try:
-        if not TRADE_CONFIG.inposition:
-            trade_direction = generate_signal(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, TRADE_CONFIG.st_period,TRADE_CONFIG.lt_period, TRADE_CONFIG.hurst_period)
-            logger.info(f"----------")
-            logger.info(f"Trade Direction: {trade_direction}")
-            if trade_direction not in [None, "HOLD"]:
-                logger.info(f"Found opportunity in {TRADE_CONFIG.instrument}")
-                find_quantities_and_trade(TRADE_CONFIG.instrument, trade_direction)
-                # send_email_notification()
+    # try:
+    if not TRADE_CONFIG.inposition:
+        trade_direction = generate_signal(TRADE_CONFIG.instrument, TRADE_CONFIG.lookback_count, TRADE_CONFIG.st_period,TRADE_CONFIG.lt_period, TRADE_CONFIG.hurst_period)
+        logger.info(f"----------")
+        logger.info(f"Trade Direction: {trade_direction}")
+        if trade_direction not in [None, "HOLD"]:
+            logger.info(f"Found opportunity in {TRADE_CONFIG.instrument}")
+            find_quantities_and_trade(TRADE_CONFIG.instrument, trade_direction)
+            # send_email_notification()
 
-        else:
-            positions_dict = get_open_positions()
-            long_pnl, short_pnl, total_pnl = calculate_total_unrealised_pnl(positions_dict)
-            current_time = time.time()
+    else:
+        positions_dict = get_open_positions()
+        long_pnl, short_pnl, total_pnl = calculate_total_unrealised_pnl(positions_dict)
+        current_time = time.time()
 
-            if current_time - last_print_time >= TRADE_CONFIG.time_interval:
-                logger.info(f" Target:  {target_pnl:.2f} | StopLoss: {stoploss_pnl:.2f} | PNL:  {total_pnl:.2f} ")
-                last_print_time = current_time
+        if current_time - last_print_time >= TRADE_CONFIG.time_interval:
+            logger.info(f" Target:  {target_pnl:.2f} | StopLoss: {stoploss_pnl:.2f} | PNL:  {total_pnl:.2f} ")
+            last_print_time = current_time
 
-            if (total_pnl > target_pnl) or (total_pnl < -stoploss_pnl):
-                msg = ""
-                if total_pnl > target_pnl:
-                    msg = f"Profit Trade, Target : {target_pnl:.2f} | Actual: {total_pnl:.2f}"
-                elif total_pnl < -stoploss_pnl:
-                    msg = f"Loss Trade, Target:  {target_pnl:.2f} | Actual: {total_pnl:.2f} "
-                logger.info(msg)
-                close_all_trades(CLIENT_CONFIG.client_api, CLIENT_CONFIG.account_id)
-                logger.info("Closing all Trades")
-                logger.info("Current balance: {:.2f}".format(get_current_balance()))
+        if (total_pnl > target_pnl) or (total_pnl < -stoploss_pnl):
+            msg = ""
+            if total_pnl > target_pnl:
+                msg = f"Profit Trade, Target : {target_pnl:.2f} | Actual: {total_pnl:.2f}"
+            elif total_pnl < -stoploss_pnl:
+                msg = f"Loss Trade, Target:  {target_pnl:.2f} | Actual: {total_pnl:.2f} "
+            logger.info(msg)
+            close_all_trades(CLIENT_CONFIG.client_api, CLIENT_CONFIG.account_id)
+            logger.info("Closing all Trades")
+            logger.info("Current balance: {:.2f}".format(get_current_balance()))
 
-                update_trade_status()
-                
-                subject = "Closing Trades"
-                body = msg
-                # send_email_notification(subject, body)
+            update_trade_status()
+            
+            subject = "Closing Trades"
+            body = msg
+            # send_email_notification(subject, body)
 
-    except Exception as e:
-        logger.info(f"An error occurred: {e}")
+    # except Exception as e:
+    #     logger.info(f"An error occurred: {e}")
     
     return {
         'inposition': TRADE_CONFIG.inposition,
